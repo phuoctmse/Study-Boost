@@ -14,15 +14,15 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSidebar, onLogout }) => {
   const pathname = usePathname();
-  
+
   // Function to check if the current route is active
   const isRouteActive = (route: string): boolean => {
     return pathname.includes(route);
   };
-  
+
   const handleLogout = () => {
     toggleSidebar(); // Close sidebar first
-    
+
     // Use the provided logout function if available
     if (onLogout) {
       onLogout();
@@ -33,14 +33,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
       }, 300); // Slight delay to allow sidebar animation to complete
     }
   };
-  
+
   return (
     <>
-      {/* Sidebar */}    
-        <Animated.View style={[
-        styles.sidebar, 
+      {/* Sidebar */}
+      <Animated.View style={[
+        styles.sidebar,
         { transform: [{ translateX: sidebarAnimation }] }
-      ]}>        
+      ]}>
         <View style={styles.sidebarHeader}>
           <TouchableOpacity onPress={toggleSidebar} style={styles.closeButton}>
             <Ionicons name="close-outline" size={24} color="#6B7FB9" />
@@ -55,8 +55,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
             />
           </TouchableOpacity>
         </View>        <View>
-          <Text style={styles.sectionHeader}>STUDY</Text>          <TouchableOpacity 
-            style={[styles.sidebarItem, isRouteActive('/dashboard') && styles.sidebarItemActive]} 
+          <Text style={styles.sectionHeader}>STUDY</Text>          <TouchableOpacity
+            style={[styles.sidebarItem, isRouteActive('/dashboard') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
               setTimeout(() => router.push('/(authenticated)/dashboard'), 300); // Navigate to dashboard
@@ -64,12 +64,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
           >
             <Ionicons name="grid-outline" size={22} color="#444" />
             <Text style={[
-              styles.sidebarItemText, 
+              styles.sidebarItemText,
               isRouteActive('/dashboard') && styles.sidebarItemActiveText
             ]}>Dashboard</Text>
           </TouchableOpacity>
-            <TouchableOpacity 
-            style={[styles.sidebarItem, isRouteActive('/pomodoro') && styles.sidebarItemActive]} 
+          <TouchableOpacity
+            style={[styles.sidebarItem, isRouteActive('/pomodoro') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
               setTimeout(() => router.push('/(authenticated)/pomodoro'), 300); // Navigate to pomodoro
@@ -77,10 +77,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
           >
             <Ionicons name="calendar-outline" size={22} color="#444" />
             <Text style={[
-              styles.sidebarItemText, 
+              styles.sidebarItemText,
               isRouteActive('/pomodoro') && styles.sidebarItemActiveText
             ]}>Study Session</Text>
-          </TouchableOpacity>            <TouchableOpacity 
+          </TouchableOpacity>            <TouchableOpacity
             style={[styles.sidebarItem, isRouteActive('/community') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
               isRouteActive('/community') && styles.sidebarItemActiveText
             ]}>Community</Text>
           </TouchableOpacity>
-            <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.sidebarItem, isRouteActive('/schedule') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
@@ -106,7 +106,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
               isRouteActive('/schedule') && styles.sidebarItemActiveText
             ]}>Schedule</Text>
           </TouchableOpacity>
-            <Text style={styles.sectionHeader}>ADDITION</Text>            <TouchableOpacity 
+          <Text style={styles.sectionHeader}>ADDITION</Text>
+          <TouchableOpacity
             style={[styles.sidebarItem, isRouteActive('/leaderboard') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
@@ -119,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
               isRouteActive('/leaderboard') && styles.sidebarItemActiveText
             ]}>Leaderboard</Text>
           </TouchableOpacity>
-            <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.sidebarItem, isRouteActive('/ai-assist') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
@@ -131,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
               styles.sidebarItemText,
               isRouteActive('/ai-assist') && styles.sidebarItemActiveText
             ]}>AI Assist</Text>
-          </TouchableOpacity>            <TouchableOpacity 
+          </TouchableOpacity>            <TouchableOpacity
             style={[styles.sidebarItem, isRouteActive('/premium') && styles.sidebarItemActive]}
             onPress={() => {
               toggleSidebar(); // Close sidebar first
@@ -144,10 +145,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
               isRouteActive('/premium') && styles.sidebarItemActiveText
             ]}>Premium</Text>
           </TouchableOpacity>
-          
+
           {/* Logout Button - Added as last sidebar item */}
-          <TouchableOpacity 
-            style={[styles.sidebarItem, styles.logoutItem]} 
+          <TouchableOpacity
+            style={[styles.sidebarItem, styles.logoutItem]}
             onPress={handleLogout}
           >
             <Ionicons name="log-out-outline" size={24} color="#FF6B6B" />
@@ -155,13 +156,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
           </TouchableOpacity>
         </View>
       </Animated.View>
-      
+
       {/* Backdrop when sidebar is open */}
       {isOpen && (
-        <TouchableOpacity 
-          style={styles.backdrop} 
-          activeOpacity={1} 
-          onPress={toggleSidebar} 
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={toggleSidebar}
         />
       )}
     </>
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     zIndex: 200,
     flexDirection: 'column',
     justifyContent: 'space-between',
-  },  sidebarHeader: {
+  }, sidebarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -216,12 +217,12 @@ const styles = StyleSheet.create({
   },
   sidebarItemActive: {
     backgroundColor: '#FCC89B',
-  },  sidebarItemText: {
+  }, sidebarItemText: {
     fontSize: 14,
     color: '#444',
     marginLeft: 15,
     fontWeight: '500',
-  },  sidebarItemActiveText: {
+  }, sidebarItemActiveText: {
     color: '#444',
     fontWeight: '600',
   },
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },  backdrop: {
+  }, backdrop: {
     position: 'absolute',
     top: 0,
     right: 0,
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
     left: width * 0.7,
     backgroundColor: 'rgba(0,0,0,0.5)',
     zIndex: 150,
-  },  logoutItem: {
+  }, logoutItem: {
     marginTop: 20,
     paddingVertical: 15,
     backgroundColor: 'rgba(0,0,0,0.02)',
