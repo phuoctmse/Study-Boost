@@ -81,6 +81,13 @@ export default function AuthenticatedLayout() {
               animation: 'slide_from_right',
             }}
           />
+          <Stack.Screen 
+            name="leaderboard" 
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack>
 
       </SafeAreaProvider>

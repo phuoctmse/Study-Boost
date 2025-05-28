@@ -99,6 +99,7 @@ const PomodoroScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       {/* Main Content */}
+      <Text style={styles.title}>Study with StudyBoost!</Text>
       <ScrollView style={styles.content}>
         <View style={styles.pomodoroCard}>
           <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
@@ -185,7 +186,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    marginTop: 65, // Add some top margin to account for the Navbar
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 20,
+    marginLeft: 10
   },
   pomodoroCard: {
     backgroundColor: '#fff',

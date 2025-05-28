@@ -12,8 +12,9 @@ const Dashboard = () => {  // Sample data for the chart - this would come from y
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Dashboard</Text>
-      
-      <View style={styles.statsContainer}>        <View style={styles.statCard}>
+
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
           <View style={styles.labelContainer}>
             <Text style={styles.statLabel}>Average</Text>
             <View style={styles.dropdown}>
@@ -24,7 +25,7 @@ const Dashboard = () => {  // Sample data for the chart - this would come from y
             <Text style={styles.timeValue}>13 Hours</Text>
           </View>
         </View>
-        
+
         <View style={styles.statCard}>
           <View style={styles.labelContainer}>
             <Text style={styles.statLabel}>Studied</Text>
@@ -45,15 +46,15 @@ const Dashboard = () => {  // Sample data for the chart - this would come from y
             <Text style={styles.dropdownText}>By weeks</Text>
           </View>
         </View>
-          <View style={styles.chart}>
-          <BarChart            data={{
-              labels: weekDays,
-              datasets: [
-                {
-                  data: studyHours,
-                },
-              ],
-            }}
+        <View style={styles.chart}>
+          <BarChart data={{
+            labels: weekDays,
+            datasets: [
+              {
+                data: studyHours,
+              },
+            ],
+          }}
             width={screenWidth}
             height={220}
             yAxisLabel=""
@@ -61,10 +62,11 @@ const Dashboard = () => {  // Sample data for the chart - this would come from y
             chartConfig={{
               backgroundGradientFrom: '#F5F5F7',
               backgroundGradientTo: '#F5F5F7',
-              decimalPlaces: 0,              color: (opacity = 1, index) => {
+              decimalPlaces: 0,
+              color: (opacity = 1, index) => {
                 // Make T3 (index 1) orange, all others purple
-                return index === 1 ? 
-                  `rgba(252, 200, 155, ${opacity})` : 
+                return index === 1 ?
+                  `rgba(252, 200, 155, ${opacity})` :
                   `rgba(92, 99, 151, ${opacity})`;
               },
               labelColor: () => '#444',
@@ -99,7 +101,7 @@ const Dashboard = () => {  // Sample data for the chart - this would come from y
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4D4F75',
+    backgroundColor: '#737AA8',
     padding: 20,
   },
   title: {
