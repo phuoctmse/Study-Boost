@@ -11,12 +11,10 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {  const navigateTo
     router.push('/(authenticated)/premium');
   };
 
-  return (
-    <View style={styles.header}>
+  return (    <View style={styles.header}>
       <TouchableOpacity onPress={toggleSidebar}>
-        <Ionicons name="menu-outline" size={24} color="#353859"/>
-      </TouchableOpacity>
-        <TouchableOpacity 
+        <Ionicons name="menu-outline" size={24} color="#353859" />
+      </TouchableOpacity>      <TouchableOpacity 
         style={styles.titleContainer}
         onPress={() => router.push('/(authenticated)/pomodoro')}
       >

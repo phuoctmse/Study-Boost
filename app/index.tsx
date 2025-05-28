@@ -43,10 +43,10 @@ export default function Index() {
         <Text>Loading...</Text>
       </View>
     );
-  }  return (
+  } return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#737AA8" />
-        {loggedInUser ? (
+      {loggedInUser ? (
         // If user is logged in, redirect to pomodoro page
         (() => {
           // Ensure we're using replace to avoid back navigation issues
@@ -54,7 +54,7 @@ export default function Index() {
           return (
             <View style={styles.loadingContainer}>
               <ActivityIndicator color="#353859" size="large" />
-              <Text style={{marginTop: 10}}>Redirecting to Pomodoro Timer...</Text>
+              <Text style={{ marginTop: 10 }}>Redirecting to Pomodoro Timer...</Text>
             </View>
           );
         })()
@@ -70,21 +70,21 @@ export default function Index() {
               />
             </View>
             <View style={styles.headerButtons}>
-              <TouchableOpacity 
-                style={styles.headerLoginButton} 
+              <TouchableOpacity
+                style={styles.headerLoginButton}
                 onPress={() => router.push('/login')}
               >
                 <Text style={styles.headerLoginText}>Login</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.headerSignupButton} 
+              <TouchableOpacity
+                style={styles.headerSignupButton}
                 onPress={() => router.push('/register')}
               >
                 <Text style={styles.headerSignupText}>Sign Up</Text>
               </TouchableOpacity>
             </View>
           </View>
-          
+
           <ScrollView style={styles.scrollView}>
             {/* Hero Section */}
             <View style={styles.heroSection}>
@@ -100,8 +100,8 @@ export default function Index() {
                     <TouchableOpacity style={styles.trialButton}>
                       <Text style={styles.trialButtonText}>Dùng thử miễn phí</Text>
                     </TouchableOpacity>
-                    
-                    <TouchableOpacity 
+
+                    <TouchableOpacity
                       style={styles.registerButton}
                       onPress={() => router.push('/register')}
                     >
@@ -111,7 +111,7 @@ export default function Index() {
                 </View>
               </View>
             </View>
-              {/* Features Section */}
+            {/* Features Section */}
             <View style={styles.featuresSection}>
               <View style={styles.featureCard}>
                 <View style={styles.featureIconContainer}>
@@ -119,14 +119,14 @@ export default function Index() {
                 </View>
                 <Text style={styles.featureTitle}>Quản lý thời gian</Text>
               </View>
-              
+
               <View style={styles.featureCard}>
                 <View style={styles.featureIconContainer}>
                   <Ionicons name="eye-outline" size={40} color="#353859" />
                 </View>
                 <Text style={styles.featureTitle}>Duy trì tập trung</Text>
               </View>
-              
+
               <View style={styles.featureCard}>
                 <View style={styles.featureIconContainer}>
                   <Ionicons name="people-outline" size={40} color="#353859" />
@@ -134,29 +134,29 @@ export default function Index() {
                 <Text style={styles.featureTitle}>Kết nối</Text>
               </View>
             </View>
-            
+
             {/* Laptop/App Preview Section */}
             <View style={styles.laptopSection}>
               <View style={styles.laptopContainer}>
-                <View style={styles.laptopScreen}>                  <Image 
-                    source={require('../assets/images/icon.png')} 
-                    style={[styles.appPreviewImage, { width: '70%', height: '70%' }]}
-                    resizeMode="contain"
-                  />
+                <View style={styles.laptopScreen}>                  <Image
+                  source={require('../assets/images/icon.png')}
+                  style={[styles.appPreviewImage, { width: '70%', height: '70%' }]}
+                  resizeMode="contain"
+                />
                 </View>
               </View>
-              
+
               <View style={styles.bottomCta}>
-                <Text style={styles.bottomCtaText}>"Dùng thử miễn phí" / "Đăng ký ngay"</Text>
+                <Text style={styles.bottomCtaText}>Dùng thử miễn phí / Đăng ký ngay</Text>
                 <View style={styles.bottomCtaButtons}>
-                  <TouchableOpacity 
-                    style={styles.loginButton} 
+                  <TouchableOpacity
+                    style={styles.loginButton}
                     onPress={() => router.push('/login')}
                   >
                     <Text style={styles.loginButtonText}>Đăng nhập</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={[styles.registerButton, styles.bottomRegisterButton]}
                     onPress={() => router.push('/register')}
                   >
@@ -199,16 +199,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#737AA8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerIcon: {
-    width: 150,  
-    height: 50, 
+    width: 150,
+    height: 50,
     marginRight: 10,
   },
   headerTitle: {
@@ -223,8 +221,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
+    backgroundColor: '#fcc89b',
     borderColor: '#fff',
     marginRight: 10,
   },
@@ -298,6 +295,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 20,
+    marginBottom: 10,
     minWidth: 150,
   },
   registerButtonText: {
@@ -368,7 +366,7 @@ const styles = StyleSheet.create({
   laptopScreen: {
     backgroundColor: '#e0e0e0',
     borderRadius: 5,
-    aspectRatio: 16/10,
+    aspectRatio: 16 / 10,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +13,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSidebar, onLogout }) => {
+  const pathname = usePathname();
+  
+  // Function to check if the current route is active
+  const isRouteActive = (route: string): boolean => {
+    return pathname.includes(route);
+  };
   
   const handleLogout = () => {
     toggleSidebar(); // Close sidebar first
@@ -30,7 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
   
   return (
     <>
-      {/* Sidebar */}      <Animated.View style={[
+      {/* Sidebar */}    
+        <Animated.View style={[
         styles.sidebar, 
         { transform: [{ translateX: sidebarAnimation }] }
       ]}>        
@@ -39,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
             <Ionicons name="close-outline" size={24} color="#6B7FB9" />
           </TouchableOpacity>          <TouchableOpacity onPress={() => {
             toggleSidebar(); // Close sidebar first
-            setTimeout(() => router.push('/(authenticated)/pomodoro'), 300); // Add delay to allow sidebar to close
+            setTimeout(() => router.push('/(authenticated)/dashboard'), 300); // Navigate to dashboard
           }}>
             <Image
               source={require('../assets/images/icon.png')}
@@ -48,51 +55,94 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, sidebarAnimation, toggleSideb
             />
           </TouchableOpacity>
         </View>        <View>
-          <Text style={styles.sectionHeader}>STUDY</Text>
-          
-          <TouchableOpacity 
-            style={styles.sidebarItem} 
-            onPress={() => router.push('/(authenticated)/pomodoro')}
+          <Text style={styles.sectionHeader}>STUDY</Text>          <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/dashboard') && styles.sidebarItemActive]} 
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/dashboard'), 300); // Navigate to dashboard
+            }}
           >
             <Ionicons name="grid-outline" size={22} color="#444" />
-            <Text style={styles.sidebarItemText}>Dashboard</Text>
+            <Text style={[
+              styles.sidebarItemText, 
+              isRouteActive('/dashboard') && styles.sidebarItemActiveText
+            ]}>Dashboard</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.sidebarItem, styles.sidebarItemActive]} 
-            onPress={() => router.push('/(authenticated)/pomodoro')}
+            <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/pomodoro') && styles.sidebarItemActive]} 
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/pomodoro'), 300); // Navigate to pomodoro
+            }}
           >
             <Ionicons name="calendar-outline" size={22} color="#444" />
-            <Text style={[styles.sidebarItemText, styles.sidebarItemActiveText]}>Study Session</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.sidebarItem}>
+            <Text style={[
+              styles.sidebarItemText, 
+              isRouteActive('/pomodoro') && styles.sidebarItemActiveText
+            ]}>Study Session</Text>
+          </TouchableOpacity>            <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/community') && styles.sidebarItemActive]}
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/community'), 300); // Navigate to community
+            }}
+          >
             <Ionicons name="people-outline" size={22} color="#444" />
-            <Text style={styles.sidebarItemText}>Community</Text>
+            <Text style={[
+              styles.sidebarItemText,
+              isRouteActive('/community') && styles.sidebarItemActiveText
+            ]}>Community</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.sidebarItem}>
-            <Ionicons name="calendar-outline" size={22} color="#444" />
-            <Text style={styles.sidebarItemText}>Schedule</Text>
-          </TouchableOpacity>
-            <Text style={styles.sectionHeader}>ADDITION</Text>
-          
-          <TouchableOpacity style={styles.sidebarItem}>
-            <Ionicons name="trophy-outline" size={22} color="#444" />
-            <Text style={styles.sidebarItemText}>Leaderboard</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.sidebarItem}
-            onPress={() => router.push('/(authenticated)/pomodoro')}
+            <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/schedule') && styles.sidebarItemActive]}
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/schedule'), 300); // Navigate to schedule
+            }}
           >
-            <Ionicons name="timer-outline" size={22} color="#444" />
-            <Text style={styles.sidebarItemText}>Pomodoro Timer</Text>
+            <Ionicons name="calendar-outline" size={22} color="#444" />
+            <Text style={[
+              styles.sidebarItemText,
+              isRouteActive('/schedule') && styles.sidebarItemActiveText
+            ]}>Schedule</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.sidebarItem}>
+            <Text style={styles.sectionHeader}>ADDITION</Text>            <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/leaderboard') && styles.sidebarItemActive]}
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/leaderboard'), 300); // Navigate to leaderboard
+            }}
+          >
+            <Ionicons name="trophy-outline" size={22} color="#444" />
+            <Text style={[
+              styles.sidebarItemText,
+              isRouteActive('/leaderboard') && styles.sidebarItemActiveText
+            ]}>Leaderboard</Text>
+          </TouchableOpacity>
+            <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/ai-assist') && styles.sidebarItemActive]}
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/ai-assist'), 300); // Navigate to ai-assist
+            }}
+          >
             <Ionicons name="bulb-outline" size={22} color="#444" />
-            <Text style={styles.sidebarItemText}>AI Assist</Text>
+            <Text style={[
+              styles.sidebarItemText,
+              isRouteActive('/ai-assist') && styles.sidebarItemActiveText
+            ]}>AI Assist</Text>
+          </TouchableOpacity>            <TouchableOpacity 
+            style={[styles.sidebarItem, isRouteActive('/premium') && styles.sidebarItemActive]}
+            onPress={() => {
+              toggleSidebar(); // Close sidebar first
+              setTimeout(() => router.push('/(authenticated)/premium'), 300); // Navigate to premium
+            }}
+          >
+            <Ionicons name="star-outline" size={22} color="#444" />
+            <Text style={[
+              styles.sidebarItemText,
+              isRouteActive('/premium') && styles.sidebarItemActiveText
+            ]}>Premium</Text>
           </TouchableOpacity>
           
           {/* Logout Button - Added as last sidebar item */}
