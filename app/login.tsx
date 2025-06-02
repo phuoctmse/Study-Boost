@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { account } from '../lib/appwrite';
 import { Ionicons } from '@expo/vector-icons';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function Login() {
   const [email, setEmail] = useState('user@example');
@@ -70,9 +71,9 @@ export default function Login() {
       setIsLoading(false);
     }
   }
-
   return (
     <SafeAreaView style={styles.container}>
+      {isLoading && <LoadingScreen message="Logging in..." />}
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

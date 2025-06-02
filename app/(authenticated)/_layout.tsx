@@ -1,16 +1,18 @@
 import { router, Stack } from "expo-router";
 import React, { useRef, useState } from 'react';
-import { Animated, Dimensions } from 'react-native';
+import { Animated, Dimensions, StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Navbar from '../../components/Navbar';
 import Sidebar from '../../components/Sidebar';
+import LoadingScreen from '../../components/LoadingScreen';
 import { account } from '../../lib/appwrite';
 
 const { width } = Dimensions.get('window');
 
 export default function AuthenticatedLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const sidebarAnimation = useRef(new Animated.Value(-width * 0.7)).current;
 
   const toggleSidebar = () => {
@@ -31,19 +33,25 @@ export default function AuthenticatedLayout() {
       }).start();
     }
   };
-
   const handleLogout = async () => {
+    setIsLoading(true);
     try {
       await account.deleteSession('current');
       router.replace('/');
     } catch (error) {
       console.error("Logout failed", error);
-    }
-  };
+      setIsLoading(false); // Only set to false on error as navigation will unmount this component on success
+    }  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-
+        {isLoading && <LoadingScreen message="Logging out..." />}
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent" 
+          translucent={true}
+        />
         
         {/* Global Components for all authenticated pages */}
         <Navbar toggleSidebar={toggleSidebar} />

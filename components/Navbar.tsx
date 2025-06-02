@@ -1,20 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View, StatusBar, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface NavbarProps {
   toggleSidebar: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {  const navigateToPremium = () => {
+const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
+  const insets = useSafeAreaInsets();
+  
+  const navigateToPremium = () => {
     router.push('/(authenticated)/premium');
   };
 
-  return (    <View style={styles.header}>
+  return (
+    <View style={[
+      styles.header, 
+      { paddingTop: Math.max(insets.top, 10) } // Sử dụng insets.top hoặc ít nhất 10px
+    ]}>
       <TouchableOpacity onPress={toggleSidebar}>
         <Ionicons name="menu-outline" size={24} color="#353859" />
-      </TouchableOpacity>      <TouchableOpacity 
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
         style={styles.titleContainer}
         onPress={() => router.push('/(authenticated)/pomodoro')}
       >
@@ -39,9 +49,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingBottom: 15,
     backgroundColor: '#737AA8',
-
   },
   titleContainer: {
     flexDirection: 'row',

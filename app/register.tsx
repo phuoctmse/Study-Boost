@@ -16,6 +16,7 @@ import {
 import { ID } from 'react-native-appwrite';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { account } from '../lib/appwrite';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -54,16 +55,17 @@ export default function Register() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>      <KeyboardAvoidingView
+  }  return (
+    <SafeAreaView style={styles.container}>
+      {isLoading && <LoadingScreen message="Creating account..." />}
+      <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView 
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >        <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          style={{width: '100%'}}>
+          style={{width: '100%'}}
+          showsVerticalScrollIndicator={false}>
           <View style={styles.loginContent}>
             <View style={styles.logoContainer}>
               <Image 
@@ -179,18 +181,21 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
   },
   loginContent: {
     width: '100%',
     maxWidth: 350,
     alignItems: 'center',
-  },
-  logoContainer: {
+  },  logoContainer: {
     alignItems: 'center',
     marginBottom: 30,
+    marginTop: 20,
   },
   logo: {
-    width: 200,
+    width: 120,
     height: 60,
     marginBottom: 16,
   },
@@ -225,8 +230,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
     color: '#333',
-    flex: 1,
-    minWidth: '100%',
   },
   eyeIcon: {
     position: 'absolute',

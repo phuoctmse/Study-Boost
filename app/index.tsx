@@ -35,16 +35,15 @@ export default function Index() {
     } catch (error) {
       console.error("Logout failed", error);
     }
-  };
-
-  if (isLoading) {
+  };  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Loading...</Text>
       </View>
     );
-  } return (
-    <SafeAreaView style={styles.container}>
+  }
+    return (
+    <SafeAreaView style={[styles.container, { backgroundColor: '#737AA8' }]}>
       <StatusBar barStyle="light-content" backgroundColor="#737AA8" />
       {loggedInUser ? (
         // If user is logged in, redirect to pomodoro page
@@ -82,10 +81,9 @@ export default function Index() {
               >
                 <Text style={styles.headerSignupText}>Sign Up</Text>
               </TouchableOpacity>
-            </View>
-          </View>
+            </View>          </View>
 
-          <ScrollView style={styles.scrollView}>
+          <ScrollView style={styles.scrollView} contentContainerStyle={{ backgroundColor: '#f4f6f8' }}>
             {/* Hero Section */}
             <View style={styles.heroSection}>
               <View style={styles.heroContent}>
@@ -180,7 +178,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
+    // Removing backgroundColor here as we set it directly in the SafeAreaView
   },
   header: {
     flexDirection: 'row',
@@ -245,13 +243,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-
   // Hero Section
   heroSection: {
     backgroundColor: '#737AA8',
     paddingVertical: 40,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 100,
+    marginTop: 0, // Ensure no gap between header and hero section
   },
   heroContent: {
     flexDirection: 'column', // Column layout for mobile
