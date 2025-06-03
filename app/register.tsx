@@ -13,9 +13,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { ID } from 'react-native-appwrite';
 import { SafeAreaView } from "react-native-safe-area-context";
-import { account } from '../lib/appwrite';
+import { register as appwriteRegister } from '../api/auth';
 import LoadingScreen from '../components/LoadingScreen';
 
 export default function Register() {
@@ -25,8 +24,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  async function handleRegister() {
+  const [showPassword, setShowPassword] = useState(false);  async function handleRegister() {
     if (!username || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       return;
@@ -46,9 +44,11 @@ export default function Register() {
     setError(null);
     
     try {
-      await account.create(ID.unique(), email, password, username);
-      await account.createEmailPasswordSession(email, password);
-      router.replace('/');
+      // Use the appwriteRegister function from api/auth.tsx
+      await appwriteRegister(email, password, username);
+      
+      // After successful registration, navigate to authenticated route
+      router.replace('/(authenticated)/pomodoro');
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || 'Registration failed. Please try again.');

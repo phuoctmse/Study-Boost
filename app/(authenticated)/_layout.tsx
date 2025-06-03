@@ -6,7 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import Navbar from '../../components/Navbar';
 import Sidebar from '../../components/Sidebar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { account } from '../../lib/appwrite';
+import { logout as appwriteLogout } from '../../api/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -32,16 +32,16 @@ export default function AuthenticatedLayout() {
         useNativeDriver: true
       }).start();
     }
-  };
-  const handleLogout = async () => {
+  };  const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await account.deleteSession('current');
+      await appwriteLogout();
       router.replace('/');
     } catch (error) {
       console.error("Logout failed", error);
       setIsLoading(false); // Only set to false on error as navigation will unmount this component on success
-    }  };
+    }
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

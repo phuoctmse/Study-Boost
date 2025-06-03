@@ -1,21 +1,23 @@
-import { Platform } from "react-native";
-import { Account, Client, Databases } from "react-native-appwrite";
+import { Platform } from 'react-native';
+import { Client, Databases, Account } from 'react-native-appwrite';
 
+// Configuration from environment variables
 const config = {
     endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
     projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
-    db: process.env.EXPO_PUBLIC_APPWRITE_DB_ID,
-    col: {
+    databaseId: process.env.EXPO_PUBLIC_APPWRITE_DB_ID,
+    collections: {
         tasks: process.env.EXPO_PUBLIC_APPWRITE_COL_TASKS_ID,
-    },
+    }
 };
 
-const client = new Client()
-    .setEndpoint(config.endpoint)
-    .setProject(config.projectId);
+// Initialize the Appwrite client
+const client = new Client();
+client
+    .setEndpoint(config.endpoint || '')
+    .setProject(config.projectId || '');
 
-const account = new Account(client)    
-
+// Set platform based on OS
 switch (Platform.OS) {
     case "ios":
         // Only set if bundleId is defined
@@ -30,6 +32,8 @@ switch (Platform.OS) {
         }
 }
 
-const database = new Databases(client);
+// Initialize services
+const databases = new Databases(client);
+const account = new Account(client);
 
-export { account, client, config, database };
+export { client, databases, account, config };
