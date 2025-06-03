@@ -4,19 +4,18 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Models } from 'react-native-appwrite';
 import { SafeAreaView } from "react-native-safe-area-context";
-import { account } from '../lib/appwrite';
+import { getCurrentUser, logout } from '../api/auth';
 
 const { width } = Dimensions.get('window');
 
 export default function Index() {
   const [loggedInUser, setLoggedInUser] = useState<Models.User<Models.Preferences> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
       try {
-        const user = await account.get();
+        const user = await getCurrentUser();
         setLoggedInUser(user);
       } catch (error) {
         console.log("No active session");
@@ -30,12 +29,12 @@ export default function Index() {
 
   const handleLogout = async () => {
     try {
-      await account.deleteSession('current');
+      await logout();
       setLoggedInUser(null);
     } catch (error) {
       console.error("Logout failed", error);
     }
-  };  if (isLoading) {
+  };if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Loading...</Text>

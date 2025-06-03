@@ -1,68 +1,46 @@
-import { useState, useEffect } from "react";
-import { 
-  StyleSheet, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  View, 
-  KeyboardAvoidingView, 
-  Platform, 
+import { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  KeyboardAvoidingView,
+  Platform,
   ActivityIndicator,
   Image,
   ScrollView
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { account } from '../lib/appwrite';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingScreen from '../components/LoadingScreen';
+import { login as appwriteLogin } from '../api/auth';
 
 export default function Login() {
-  const [email, setEmail] = useState('user@example');
-  const [password, setPassword] = useState('1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // Set default credentials on component mount
-  useEffect(() => {
-    setEmail('user@example');
-    setPassword('1234');
-  }, []);  async function handleLogin() {
+  const [showPassword, setShowPassword] = useState(false); async function handleLogin() {
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
-    // Check for hardcoded credentials
-    if (email === 'user@example' && password === '1234') {
-      try {
-        // If hardcoded credentials match, create an anonymous session
-        // This is just for demo purposes - in a real app, always use secure authentication
-        await account.createAnonymousSession();
-        
-        // Navigate to the authenticated layout with pomodoro page
-        router.replace('/(authenticated)/pomodoro');
-      } catch (err: any) {
-        console.error("Login error:", err);
-        setError(err.message || 'Failed to login. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-    
-    // Regular login flow for other credentials
+
     try {
-      // For regular credentials, ensure password meets Appwrite's requirements (min 8 chars)
+      // For Appwrite authentication, password must be at least 8 characters
       if (password.length < 8) {
         throw new Error('Password must be at least 8 characters long');
       }
-      
-      await account.createEmailPasswordSession(email, password);
+
+      // Use the Appwrite login function from the API
+      await appwriteLogin(email, password);
+
+      // Navigate to the authenticated layout with pomodoro page
       router.replace('/(authenticated)/pomodoro');
     } catch (err: any) {
       console.error("Login error:", err);
@@ -80,8 +58,8 @@ export default function Login() {
       >
         <View style={styles.loginContent}>
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../assets/images/icon.png')} 
+            <Image
+              source={require('../assets/images/icon.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -94,16 +72,15 @@ export default function Login() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
-            <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Username"
+              placeholder="Email"
               placeholderTextColor="#99A"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
-              defaultValue="user@example"
             />
           </View>
 
@@ -115,26 +92,26 @@ export default function Login() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              defaultValue="1234"
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.eyeIcon}
               onPress={() => setShowPassword(!showPassword)}
             >
-              <Ionicons 
-                name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                size={20} 
-                color="#99A" 
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color="#99A"
               />
             </TouchableOpacity>
-          </View>          <View style={styles.troubleRow}>
+          </View>
+          <View style={styles.troubleRow}>
             <Text style={styles.troubleText}>
-              Demo credentials: user@example / 1234
+              Please enter your login credentials
             </Text>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.loginButton} 
+
+          <TouchableOpacity
+            style={styles.loginButton}
             onPress={handleLogin}
             disabled={isLoading}
           >
@@ -143,11 +120,6 @@ export default function Login() {
             ) : (
               <Text style={styles.loginButtonText}>Sign in</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.googleButton}>
-            <Ionicons name="logo-google" size={20} color="#353859" style={styles.googleIcon} />
-            <Text style={styles.googleButtonText}>Sign in with Google</Text>
           </TouchableOpacity>
 
           <View style={styles.registerContainer}>
@@ -244,24 +216,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   loginButtonText: {
-    color: '#353859',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FCC89B',
-    borderRadius: 25,
-    paddingVertical: 14,
-    width: '100%',
-    marginBottom: 24,
-  },
-  googleIcon: {
-    marginRight: 8,
-  },
-  googleButtonText: {
     color: '#353859',
     fontSize: 16,
     fontWeight: '600',
