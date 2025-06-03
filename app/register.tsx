@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,65 +11,70 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { register as appwriteRegister } from '../api/auth';
-import LoadingScreen from '../components/LoadingScreen';
+import { register as appwriteRegister } from "../api/auth";
+import LoadingScreen from "../components/LoadingScreen";
 
 export default function Register() {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);  async function handleRegister() {
+  const [showPassword, setShowPassword] = useState(false);
+  async function handleRegister() {
     if (!username || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
-    
+
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
-    
+
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError("Password must be at least 8 characters long");
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Use the appwriteRegister function from api/auth.tsx
       await appwriteRegister(email, password, username);
-      
+
+
       // After successful registration, navigate to authenticated route
-      router.replace('/(authenticated)/pomodoro');
+      router.replace("/(authenticated)/pomodoro");
     } catch (err: any) {
       console.error("Registration error:", err);
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }  return (
+  }
+  return (
     <SafeAreaView style={styles.container}>
       {isLoading && <LoadingScreen message="Creating account..." />}
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >        <ScrollView 
+      >
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
-          style={{width: '100%'}}
-          showsVerticalScrollIndicator={false}>
+          style={{ width: "100%" }}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.loginContent}>
             <View style={styles.logoContainer}>
-              <Image 
-                source={require('../assets/images/icon.png')} 
+              <Image
+                source={require("../assets/images/icon.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -78,11 +83,15 @@ export default function Register() {
 
             {error && (
               <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle-outline" size={20} color="#d32f2f" />
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={20}
+                  color="#d32f2f"
+                />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
-              <View style={styles.inputContainer}>
+            <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 placeholder="Username"
@@ -93,7 +102,7 @@ export default function Register() {
                 underlineColorAndroid="transparent"
               />
             </View>
-            
+
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -115,18 +124,18 @@ export default function Register() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.eyeIcon}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color="#99A" 
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color="#99A"
                 />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -138,8 +147,8 @@ export default function Register() {
               />
             </View>
 
-            <TouchableOpacity 
-              style={styles.registerButton} 
+            <TouchableOpacity
+              style={styles.registerButton}
               onPress={handleRegister}
               disabled={isLoading}
             >
@@ -152,13 +161,14 @@ export default function Register() {
 
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/login')}>
+              <TouchableOpacity onPress={() => router.push("/login")}>
                 <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.termsText}>
-              By creating an account, you agree to our Terms of Service and Privacy Policy.
+              By creating an account, you agree to our Terms of Service and
+              Privacy Policy.
             </Text>
           </View>
         </ScrollView>
@@ -170,27 +180,29 @@ export default function Register() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4D4F75',
-  },  keyboardView: {
+    backgroundColor: "#4D4F75",
+  },
+  keyboardView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
-    width: '100%',
+    width: "100%",
   },
   scrollContent: {
     flexGrow: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 40,
   },
   loginContent: {
-    width: '100%',
+    width: "100%",
     maxWidth: 350,
-    alignItems: 'center',
-  },  logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
+  },
+  logoContainer: {
+    alignItems: "center",
     marginBottom: 30,
     marginTop: 20,
   },
@@ -201,72 +213,73 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffebee',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffebee",
     padding: 10,
     borderRadius: 6,
     marginBottom: 20,
-    width: '100%',
-  },  errorText: {
-    color: '#d32f2f',
+    width: "100%",
+  },
+  errorText: {
+    color: "#d32f2f",
     marginLeft: 10,
   },
   inputContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: 16,
-    position: 'relative',
+    position: "relative",
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     height: 50,
     borderRadius: 25,
     paddingHorizontal: 20,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    color: '#333',
+    borderColor: "#E0E0E0",
+    color: "#333",
   },
   eyeIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 15,
   },
   registerButton: {
-    backgroundColor: '#FCC89B',
+    backgroundColor: "#FCC89B",
     borderRadius: 25,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
-    width: '100%',
+    width: "100%",
     marginTop: 10,
   },
   registerButtonText: {
-    color: '#353859',
+    color: "#353859",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginVertical: 10,
   },
   loginText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
   },
   loginLink: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
     fontSize: 14,
   },
   termsText: {
-    textAlign: 'center',
-    color: '#FFFFFF',
+    textAlign: "center",
+    color: "#FFFFFF",
     fontSize: 12,
     marginTop: 10,
     opacity: 0.8,
