@@ -45,12 +45,11 @@ export default function Register() {
     setError(null);
 
     try {
-      // Use the appwriteRegister function from api/auth.tsx
+      // Register and create session
       await appwriteRegister(email, password, username);
-
-
-      // After successful registration, navigate to authenticated route
-      router.replace("/(authenticated)/pomodoro");
+      
+      // After successful registration and session creation, navigate to survey page
+      router.replace("/surveypage" as any);
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || "Registration failed. Please try again.");

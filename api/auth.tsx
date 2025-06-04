@@ -22,6 +22,7 @@ export const logout = async () => {
 export const register = async (email: string, password: string, name: string) => {
     try {
         const response = await account.create(ID.unique(), email, password, name);
+        await account.createEmailPasswordSession(email, password);
         return response;
     } catch (error: any) {
         throw new Error(`Registration failed: ${error.message}`);
