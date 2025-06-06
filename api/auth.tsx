@@ -1,5 +1,5 @@
 import { ID } from 'react-native-appwrite';
-import { account } from './index';
+import { account, config, databases } from './index';
 
 export const login = async (email: string, password: string) => {
     try {
@@ -22,6 +22,12 @@ export const logout = async () => {
 export const register = async (email: string, password: string, name: string) => {
     try {
         const response = await account.create(ID.unique(), email, password, name);
+        const document = await databases.createDocument(
+            config.databaseId,
+            config.collections.users,
+            ID.unique(),
+            { userId: response.$id, email, name }
+        );
         return response;
     } catch (error: any) {
         throw new Error(`Registration failed: ${error.message}`);

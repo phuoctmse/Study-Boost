@@ -7,9 +7,11 @@ const config = {
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID as string,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DB_ID as string,
   collections: {
-    tasks: process.env.EXPO_PUBLIC_APPWRITE_COL_TASKS_ID as string,
-    surveyQuestions: process.env.EXPO_PUBLIC_APPWRITE_COL_SURVEY_QUESTIONS_ID as string,
-    surveyResponses: process.env.EXPO_PUBLIC_APPWRITE_COL_SURVEY_RESPONSES_ID as string,
+    surveyQuestions: process.env
+      .EXPO_PUBLIC_APPWRITE_COL_SURVEY_QUESTIONS_ID as string,
+    surveyResponses: process.env
+      .EXPO_PUBLIC_APPWRITE_COL_SURVEY_RESPONSES_ID as string,
+    users: process.env.EXPO_PUBLIC_APPWRITE_COL_USERS_ID as string,
   },
 };
 
