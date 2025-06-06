@@ -10,11 +10,10 @@ export const getSurveyQuestions = async () => {
       config.collections.surveyQuestions,
       []
     );
-    
-    console.log("Survey Questions:", listSurveyQuestions);
+    console.log("Survey Questions Output:", listSurveyQuestions);
     return listSurveyQuestions;
   } catch (error: any) {
-    
+    console.error("Survey questions fetch error:", error);
     throw new Error(`Failed to fetch survey questions: ${error.message}`);
   }
 };
@@ -30,6 +29,8 @@ export const saveSurveyResponse = async (
       {
         userSurveyRes: userSurveyRes.userId,
         question_id: userSurveyRes.question_id,
+        response: userSurveyRes.response,
+        submited_at: userSurveyRes.submited_at,
       }
     );
     // Map the response to SurveyResponse type

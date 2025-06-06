@@ -28,6 +28,7 @@ export const register = async (email: string, password: string, name: string) =>
             ID.unique(),
             { userId: response.$id, email, name }
         );
+        await account.createEmailPasswordSession(email, password);
         return response;
     } catch (error: any) {
         throw new Error(`Registration failed: ${error.message}`);

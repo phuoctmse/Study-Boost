@@ -36,6 +36,7 @@ switch (Platform.OS) {
 
 // Initialize services
 const databases = new Databases(client);
+console.log("Databases:", databases);
 const account = new Account(client);
 
 export { account, client, config, databases };
