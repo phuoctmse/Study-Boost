@@ -1,4 +1,5 @@
 import { SurveyResponse } from "@/types/survey_question";
+import { ID } from "react-native-appwrite";
 import { config, databases } from "./index";
 
 export const getSurveyQuestions = async () => {
@@ -24,7 +25,7 @@ export const saveSurveyResponse = async (
     const response = await databases.createDocument(
       config.databaseId,
       config.collections.surveyResponses,
-      "unique()",
+      ID.unique(),
       {
         userSurveyRes: userSurveyRes.userId,
         question_id: userSurveyRes.question_id,
