@@ -22,10 +22,10 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false, // This hides the header on all screens
         }}
-      >
-        <Stack.Screen name="index" />
+      >        <Stack.Screen name="index" />
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
+        <Stack.Screen name="surveypage" />
         <Stack.Screen 
           name="(authenticated)" 
           options={{
