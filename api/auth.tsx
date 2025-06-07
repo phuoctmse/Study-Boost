@@ -25,7 +25,7 @@ export const register = async (email: string, password: string, name: string) =>
         const document = await databases.createDocument(
             config.databaseId,
             config.collections.users,
-            ID.unique(),
+            response.$id,
             { userId: response.$id, email, name }
         );
         await account.createEmailPasswordSession(email, password);
