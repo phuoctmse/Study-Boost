@@ -3,6 +3,7 @@ import { Account, Client, Databases } from "react-native-appwrite";
 
 // Configuration from environment variables
 const config = {
+  devKey: process.env.EXPO_PUBLIC_APPWRITE_DEVKEY as string,
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT as string,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID as string,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DB_ID as string,
@@ -16,6 +17,7 @@ const config = {
 // Initialize the Appwrite client
 const client = new Client();
 client.setEndpoint(config.endpoint || "").setProject(config.projectId || "");
+client.setDevKey(config.devKey || "");
 
 // Set platform based on OS
 switch (Platform.OS) {
