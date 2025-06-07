@@ -1,30 +1,30 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Image,
-  ScrollView
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { Ionicons } from '@expo/vector-icons';
-import LoadingScreen from '../components/LoadingScreen';
-import { login as appwriteLogin } from '../api/auth';
+import { login as appwriteLogin } from "../api/auth";
+import LoadingScreen from "../components/LoadingScreen";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false); async function handleLogin() {
+  const [showPassword, setShowPassword] = useState(false);
+  async function handleLogin() {
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
@@ -34,17 +34,19 @@ export default function Login() {
     try {
       // For Appwrite authentication, password must be at least 8 characters
       if (password.length < 8) {
-        throw new Error('Password must be at least 8 characters long');
+        throw new Error("Password must be at least 8 characters long");
       }
 
       // Use the Appwrite login function from the API
       await appwriteLogin(email, password);
 
       // Navigate to the authenticated layout with pomodoro page
-      router.replace('/(authenticated)/pomodoro');
+      router.replace("/(authenticated)/pomodoro");
     } catch (err: any) {
       console.error("Login error:", err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      setError(
+        err.message || "Failed to login. Please check your credentials."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +61,7 @@ export default function Login() {
         <View style={styles.loginContent}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../assets/images/icon.png')}
+              source={require("../assets/images/icon.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -123,8 +125,8 @@ export default function Login() {
           </TouchableOpacity>
 
           <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/register')}>
+            <Text style={styles.registerText}>Don`t have an account? </Text>
+            <TouchableOpacity onPress={() => router.push("/register")}>
               <Text style={styles.registerLink}>Register Now</Text>
             </TouchableOpacity>
           </View>
@@ -137,21 +139,21 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4D4F75',
+    backgroundColor: "#4D4F75",
   },
   keyboardView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   loginContent: {
-    width: '100%',
+    width: "100%",
     maxWidth: 350,
-    alignItems: 'center',
+    alignItems: "center",
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 30,
   },
   logo: {
@@ -161,77 +163,77 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffebee',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffebee",
     padding: 10,
     borderRadius: 6,
     marginBottom: 20,
-    width: '100%',
+    width: "100%",
   },
   errorText: {
-    color: '#d32f2f',
+    color: "#d32f2f",
     marginLeft: 10,
   },
   inputContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: 16,
-    position: 'relative',
+    position: "relative",
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     height: 50,
     borderRadius: 25,
     paddingHorizontal: 20,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    color: '#333',
+    borderColor: "#E0E0E0",
+    color: "#333",
   },
   eyeIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 15,
   },
   troubleRow: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginBottom: 20,
     marginTop: 4,
   },
   troubleText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
   },
   loginButton: {
-    backgroundColor: '#FCC89B',
+    backgroundColor: "#FCC89B",
     borderRadius: 25,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 12,
-    width: '100%',
+    width: "100%",
   },
   loginButtonText: {
-    color: '#353859',
+    color: "#353859",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 10,
   },
   registerText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
   },
   registerLink: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
     fontSize: 14,
   },
 });
