@@ -9,7 +9,7 @@ import {
   View
 } from "react-native";
 import { account } from "../api/index";
-import { getSurveyQuestions, saveSurveyResponse } from "../api/survey";
+import { getSurveyQuestions } from "../api/survey/survey";
 import { SurveyQuestion } from "../types/survey_question";
 
 export default function Survey() {
@@ -73,12 +73,12 @@ export default function Survey() {
     setSubmitting(true);
     try {
       // Save the user's response
-      await saveSurveyResponse({
-        userId,
-        question_id: currentQuestion.id || "",
-        response: optionValue,
-        submited_at: new Date(),
-      });
+      // await saveSurveyResponse({
+      //   userId,
+      //   question_id: currentQuestion.id || "",
+      //   response: optionValue,
+      //   submited_at: new Date(),
+      // });
 
       // Move to the next question or finish the survey
       if (currentQuestionIndex < questions.length - 1) {

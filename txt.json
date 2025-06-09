@@ -1,0 +1,120 @@
+[
+  {
+    "user_id": "68308f8600225bab269c",
+    "title": "Kế hoạch học tập React Native chi tiết",
+    "subject": "React Native",
+    "weekly_plan": [
+      {
+        "week": 1,
+        "focus": "Giới thiệu và Cài đặt Môi trường React Native",
+        "topics": [
+          "Tổng quan về React Native và kiến trúc cơ bản",
+          "Cài đặt Node.js, Watchman, JDK",
+          "Cài đặt Android Studio (cho Android) và Xcode (cho iOS)",
+          "Tạo dự án React Native đầu tiên với Expo CLI và React Native CLI",
+          "Tìm hiểu cấu trúc thư mục của một dự án React Native"
+        ],
+        "objective": "Hiểu rõ React Native là gì, các công cụ cần thiết, cài đặt thành công môi trường phát triển và tạo, chạy được dự án React Native đầu tiên trên máy ảo/thiết bị thật."
+      },
+      {
+        "week": 2,
+        "focus": "Các Thành phần Cơ bản (Core Components) và Styling trong React Native",
+        "topics": [
+          "Tìm hiểu sâu về View, Text, Image, ScrollView, FlatList, SectionList",
+          "Sử dụng TextInput để nhập liệu từ người dùng",
+          "Button và các thành phần Touchable (TouchableOpacity, TouchableHighlight)",
+          "Khái niệm Props và State trong component",
+          "Styling với StyleSheet và Flexbox để bố cục giao diện"
+        ],
+        "objective": "Nắm vững cách sử dụng các Core Components để xây dựng giao diện người dùng cơ bản, hiểu rõ cách truyền dữ liệu qua Props, quản lý trạng thái đơn giản bằng State và áp dụng styling hiệu quả bằng StyleSheet và Flexbox."
+      },
+      {
+        "week": 3,
+        "focus": "Navigation và Xử lý Tương tác Người dùng Nâng cao",
+        "topics": [
+          "Giới thiệu thư viện React Navigation",
+          "Triển khai Stack Navigator để điều hướng giữa các màn hình",
+          "Sử dụng Tab Navigator và Drawer Navigator",
+          "Truyền tham số (params) giữa các màn hình",
+          "Xử lý các cử chỉ người dùng (gestures) và Alert"
+        ],
+        "objective": "Có khả năng xây dựng ứng dụng đa màn hình với các loại điều hướng phổ biến, truyền dữ liệu giữa các màn hình và xử lý các tương tác phức tạp hơn của người dùng."
+      },
+      {
+        "week": 4,
+        "focus": "Làm việc với API, Lưu trữ Dữ liệu và Quản lý Trạng thái",
+        "topics": [
+          "Gọi API bất đồng bộ sử dụng Fetch và Axios",
+          "Xử lý dữ liệu JSON từ API và hiển thị lên giao diện",
+          "Giới thiệu về AsyncStorage để lưu trữ dữ liệu cục bộ đơn giản",
+          "Tìm hiểu cơ bản về quản lý trạng thái toàn cục với Context API",
+          "Xử lý lỗi và tải dữ liệu (loading states)"
+        ],
+        "objective": "Biết cách tích hợp API vào ứng dụng để lấy và gửi dữ liệu, lưu trữ dữ liệu cơ bản trên thiết bị và bắt đầu làm quen với các kỹ thuật quản lý trạng thái phức tạp hơn cho ứng dụng."
+      }
+    ],
+    "daily_session": {
+      "session_title": "Phiên học React Native buổi tối tập trung",
+      "duration_minutes": 30,
+      "study_days": [
+        "Monday",
+        "Wednesday",
+        "Friday",
+        "Sunday"
+      ],
+      "activities": [
+        {
+          "name": "Ôn tập nhanh và Chuẩn bị",
+          "duration_minutes": 5,
+          "description": "Xem lại nhanh các ghi chú từ buổi học trước. Xác định rõ mục tiêu cụ thể cho chủ đề mới sẽ học trong phiên này.",
+          "techniques": [
+            "Kỹ thuật Feynman (tóm tắt nhanh)",
+            "Đặt mục tiêu SMART nhỏ"
+          ]
+        },
+        {
+          "name": "Nghiên cứu chủ đề mới",
+          "duration_minutes": 15,
+          "description": "Tập trung đọc tài liệu chính thức, xem video hướng dẫn hoặc một phần của khóa học về chủ đề đã xác định. Ghi chú lại các khái niệm cốt lõi, cú pháp và ví dụ quan trọng.",
+          "techniques": [
+            "Đọc hiểu sâu",
+            "Ghi chú phương pháp Cornell",
+            "Học tập chủ động (Active Learning)"
+          ]
+        },
+        {
+          "name": "Thực hành và Củng cố kiến thức",
+          "duration_minutes": 10,
+          "description": "Viết code theo một ví dụ nhỏ liên quan đến chủ đề vừa học, hoặc thử sửa đổi một đoạn code có sẵn để hiểu rõ hơn. Cố gắng giải thích lại những gì vừa học được.",
+          "techniques": [
+            "Học qua thực hành (Learning by Doing)",
+            "Tự kiểm tra (Self-testing)",
+            "Pair programming (nếu có thể)"
+          ]
+        }
+      ]
+    },
+    "milestones": [
+      {
+        "id": 1,
+        "description": "Cài đặt thành công toàn bộ môi trường phát triển React Native (Node, JDK, Android Studio/Xcode, CLI) và chạy được ứng dụng 'Hello World' trên cả máy ảo Android và iOS (nếu có máy Mac).",
+        "target_completion": "Hoàn thành vào cuối Tuần 1"
+      },
+      {
+        "id": 2,
+        "description": "Xây dựng được một ứng dụng đơn giản (ví dụ: một màn hình Profile) sử dụng ít nhất 5 Core Components khác nhau, áp dụng Flexbox để bố cục và quản lý trạng thái cơ bản của component.",
+        "target_completion": "Hoàn thành vào cuối Tuần 2"
+      },
+      {
+        "id": 3,
+        "description": "Phát triển một ứng dụng nhỏ có ít nhất 3 màn hình, sử dụng React Navigation (Stack và Tab Navigator) để điều hướng, có khả năng truyền dữ liệu giữa các màn hình.",
+        "target_completion": "Hoàn thành vào cuối Tuần 3"
+      },
+      {
+        "id": 4,
+        "description": "Tích hợp thành công một API công khai (ví dụ: API danh sách người dùng, API thời tiết) vào ứng dụng, lấy dữ liệu, hiển thị lên giao diện và xử lý trạng thái tải/lỗi.",
+        "target_completion": "Hoàn thành vào cuối Tuần 4"
+      }
+    ]
+  }
+]
