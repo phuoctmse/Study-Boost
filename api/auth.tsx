@@ -26,6 +26,7 @@ export const register = async (
 ) => {
   try {
     const response = await account.create(ID.unique(), email, password, name);
+    await account.createVerification('http://localhost:3000/verify')
     // console.log('User registration response:', response);
     const document = await databases.createDocument(
       config.databaseId,

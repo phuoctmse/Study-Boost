@@ -1,8 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { account } from "../api/index";
 import { getSurveyQuestions } from "../api/survey/survey";
 import { SurveyQuestion } from "../types/survey_question";
@@ -137,10 +136,10 @@ export default function Survey() {
           <Ionicons name="checkmark-circle" size={80} color="#EEAD78" />
           <Text style={styles.congratsTitle}>Congratulations!</Text>
           <Text style={styles.congratsText}>
-            You've completed the survey. Thank you for sharing about yourself!
+            You`ve completed the survey. Thank you for sharing about yourself!
           </Text>
           <Text style={styles.congratsDescription}>
-            Let's start your learning journey! We've prepared some great study tools for you.
+            Let`s start your learning journey! We`ve prepared some great study tools for you.
           </Text>
           <TouchableOpacity 
             style={styles.continueButton}

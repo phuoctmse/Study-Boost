@@ -28,6 +28,8 @@ export default function Index() {
     const checkSession = async () => {
       try {
         const user = await getCurrentUser();
+        console.log("Current User:", user);
+        console.log(isLoading);
         setLoggedInUser(user);
       } catch (error) {
         console.log("No active session");
@@ -37,8 +39,8 @@ export default function Index() {
     };
 
     checkSession();
-    getSurveyQuestions()
-  }, []);
+    getSurveyQuestions();
+  }, [isLoading]);
 
   const handleLogout = async () => {
     try {
