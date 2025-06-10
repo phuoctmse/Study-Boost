@@ -1,5 +1,6 @@
+import { sendSurveyToN8n } from "@/api/study-schedule/study_schedule";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,7 +11,6 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { account } from "../api/index";
 import { getSurveyQuestions } from "../api/survey/survey";
 import { SurveyQuestion } from "../types/survey_question";
 
@@ -23,27 +23,26 @@ export default function Survey() {
   const [userId, setUserId] = useState<string | null>(null);
   const [textResponse, setTextResponse] = useState<string>("");
   const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
-  // Fetch survey questions when component mounts
+  const [responses, setResponses] = useState<{ questionId: string; response: string }[]>([]);
+  const { user_id: userIdParam } = useLocalSearchParams();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // First verify authentication
-        try {
-          const user = await account.get();
-          setUserId(user.$id); // Still store user ID in case we need it later
-        } catch (err) {
-          // If getting user fails, redirect to login
-          console.error("Authentication error:", err);
+        if (typeof userIdParam === "string") {
+          setUserId(userIdParam);
+        } else if (Array.isArray(userIdParam)) {
+          setUserId(userIdParam[0]);
+        } else {
+          setUserId(null);
           router.replace("/login" as any);
           return;
         }
 
-        // Fetch survey questions
         const response = await getSurveyQuestions();
         if (response?.documents) {
-          // Map the documents to match SurveyQuestion type
           const mappedQuestions: SurveyQuestion[] = response.documents.map(doc => ({
-            id: doc.$id,
+            id: doc.$id, // Ensure $id is always a string
             question_text: doc.question_text,
             question_type: doc.question_type,
             category: doc.category,
@@ -65,46 +64,61 @@ export default function Survey() {
     fetchData();
   }, []);
 
-  const currentQuestion = questions[currentQuestionIndex];  const handleSubmit = (response: string) => {
-    if (!currentQuestion) return;
+  const currentQuestion = questions[currentQuestionIndex];
+
+  const handleSubmit = async (response: string) => {
+    if (!currentQuestion || !userId || userId.trim() === "") {
+      setError("Invalid user ID or question data. Please try again.");
+      router.replace("/login" as any);
+      return;
+    }
+
+    // Ensure questionId is a string
+    if (!currentQuestion.id) {
+      setError("Invalid question ID. Please try again.");
+      return;
+    }
 
     setSubmitting(true);
-    try {
-      // Save the user's response
-      // await saveSurveyResponse({
-      //   userId,
-      //   question_id: currentQuestion.id || "",
-      //   response: optionValue,
-      //   submited_at: new Date(),
-      // });
 
-      // Move to the next question or finish the survey
+    try {
+      const newResponse = { questionId: currentQuestion.id, response };
+      const updatedResponses = [...responses, newResponse];
+
       if (currentQuestionIndex < questions.length - 1) {
+        setResponses(updatedResponses);
         setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setTextResponse(""); // Reset text input for the next question
+        setTextResponse("");
       } else {
-        // All questions answered, show completion screen
+        console.log("Sending to n8n:", { userId, responses: updatedResponses });
+        const data = await sendSurveyToN8n(userId, updatedResponses);
+        console.log('test data get from n8n', data) //thằng này cần trả đúng kiểu n8nSurveyData
+        //Promise. all save daily session , weekly plan , milestone
+        //Lấy id của 3 thằng trên lưu vào study schedule
+        //Trả về response tạo mới document study schedule thành công
+        //Cần phải cho user đợi để hoàn thành các thao tác trên 
+        setResponses([]);
         setSurveyCompleted(true);
       }
     } catch (err: any) {
       console.error("Error processing response:", err);
-      setError("Something went wrong. Please try again.");
+      setError("Failed to submit survey response. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   const handleOptionSelect = (optionValue: string) => {
     handleSubmit(optionValue);
   };
 
   const handleTextSubmit = () => {
     if (textResponse.trim().length === 0) {
-      return; // Don't submit empty responses
+      return;
     }
     handleSubmit(textResponse);
   };
-  
+
   const navigateToPomodoroTimer = () => {
     router.replace("/(authenticated)/pomodoro");
   };
@@ -121,15 +135,18 @@ export default function Survey() {
   if (error) {
     return (
       <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>        <TouchableOpacity style={styles.retryButton} onPress={() => router.replace("surveypage" as any)}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => router.replace("surveypage" as any)}>
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
-  }  // Render congratulation screen after completing the survey
+  }
+
   if (surveyCompleted) {
     return (
-      <SafeAreaView style={styles.container}>        <View style={styles.congratsContainer}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.congratsContainer}>
           <Text style={styles.pageTitle}>
             Before you start learning, let us know a bit about you
           </Text>
@@ -141,7 +158,7 @@ export default function Survey() {
           <Text style={styles.congratsDescription}>
             Let`s start your learning journey! We`ve prepared some great study tools for you.
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.continueButton}
             onPress={navigateToPomodoroTimer}
           >
@@ -151,20 +168,20 @@ export default function Survey() {
       </SafeAreaView>
     );
   }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.contentContainer}>
         <Text style={styles.pageTitle}>
           Before you start learning, let us know a bit about you
         </Text>
-        
+
         {currentQuestion ? (
           <>
             <Text style={styles.questionText}>
               {currentQuestion.question_text}
             </Text>
-            
-            {/* Display different inputs based on the question type */}
+
             {currentQuestion.options && currentQuestion.options.length > 0 ? (
               <View style={styles.optionsContainer}>
                 {currentQuestion.options.map((option, index) => (
@@ -269,7 +286,7 @@ const styles = StyleSheet.create({
     padding: 15,
     color: "#333333",
     fontSize: 16,
-    textAlignVertical: "top", 
+    textAlignVertical: "top",
     minHeight: 120,
     width: "100%",
   },
