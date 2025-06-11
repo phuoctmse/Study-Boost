@@ -26,17 +26,18 @@ export const register = async (
 ) => {
   try {
     const response = await account.create(ID.unique(), email, password, name);
-    await account.createVerification('http://localhost:3000/verify')
-    // console.log('User registration response:', response);
+    console.log('User registration response:', response);
     const document = await databases.createDocument(
       config.databaseId,
       config.collections.users,
       response.$id,
       { username: name, email: email }
     );
-    // console.log('User document created:', document);
+    console.log('User document created:', document);
     const session = await account.createEmailPasswordSession(email, password);
-    // console.log('User registered and session created:', session);
+    console.log('User registered and session created:', session);
+    const sendEmail = await account.createVerification('http://localhost:3000/verify')
+    console.log('email sent', sendEmail)
     return response;
   } catch (error: any) {
     throw new Error(`Registration failed: ${error.message}`);
