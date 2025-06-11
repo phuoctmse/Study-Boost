@@ -46,20 +46,33 @@ export default function Register() {
 
     try {
       // Register and create session
-      await appwriteRegister(email, password, username);
-      
+      const response = await appwriteRegister(email, password, username);
+
       // After successful registration and session creation, navigate to survey page
-      router.replace("/surveypage" as any);
+      router.replace({
+        pathname: '/surveypage',
+        params: {
+          user_id: response.$id
+        }
+      });
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }
-  return (
+  } return (
     <SafeAreaView style={styles.container}>
       {isLoading && <LoadingScreen message="Creating account..." />}
+
+      {/* Back Arrow Button */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.replace("/")}
+      >
+        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -180,6 +193,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#4D4F75",
+  },
+  backButton: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 50,
+    left: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
   },
   keyboardView: {
     flex: 1,

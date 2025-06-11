@@ -50,10 +50,18 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  }
-  return (
+  }  return (
     <SafeAreaView style={styles.container}>
       {isLoading && <LoadingScreen message="Logging in..." />}
+      
+      {/* Back Arrow Button */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => router.replace("/")}
+      >
+        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+      
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -140,6 +148,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#4D4F75",
+  },
+  backButton: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 50,
+    left: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
   },
   keyboardView: {
     flex: 1,

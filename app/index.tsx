@@ -1,4 +1,4 @@
-import { getSurveyQuestions } from "@/api/survey";
+import { getSurveyQuestions } from "@/api/survey/survey";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -28,6 +28,8 @@ export default function Index() {
     const checkSession = async () => {
       try {
         const user = await getCurrentUser();
+        console.log("Current User:", user);
+        console.log(isLoading);
         setLoggedInUser(user);
       } catch (error) {
         console.log("No active session");
@@ -37,8 +39,8 @@ export default function Index() {
     };
 
     checkSession();
-    getSurveyQuestions()
-  }, []);
+    getSurveyQuestions();
+  }, [isLoading]);
 
   const handleLogout = async () => {
     try {

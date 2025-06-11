@@ -9,18 +9,10 @@ export interface SurveyQuestion {
   question_no: QuestionNo;
 }
 
-export interface SurveyResponse {
-  id?: string;
-  userId: string;
-  question_id: string;
-  response: string;
-  submited_at: Date;
-}
-
 enum QuestionType {
   TEXT = "Text",
   MULTIPLE_CHOICE = "MultipleChoice",
-  SINGLE_CHOICE = "Scale",
+  Scale = "Scale",
 }
 
 enum Category {
@@ -35,4 +27,10 @@ enum QuestionNo {
   TWO = "2",
   THREE = "3",
   FOUR = "4",
+  FIVE = "5",
+  SIX = "6",
+  SEVEN = "7",
+  EIGHT = "8",
+  NINE = "9",
+  TEN = "10",
 }

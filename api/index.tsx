@@ -3,21 +3,32 @@ import { Account, Client, Databases } from "react-native-appwrite";
 
 // Configuration from environment variables
 const config = {
+  devKey: process.env.EXPO_PUBLIC_APPWRITE_DEVKEY as string,
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT as string,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID as string,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DB_ID as string,
+  n8n: {
+    survey: process.env.EXPO_PUBLIC_N8N_SURVEY_TEST_URL as string
+  },
   collections: {
     surveyQuestions: process.env
       .EXPO_PUBLIC_APPWRITE_COL_SURVEY_QUESTIONS_ID as string,
-    surveyResponses: process.env
-      .EXPO_PUBLIC_APPWRITE_COL_SURVEY_RESPONSES_ID as string,
     users: process.env.EXPO_PUBLIC_APPWRITE_COL_USERS_ID as string,
+    studySchedules: process.env
+      .EXPO_PUBLIC_APPWRITE_COL_STUDY_SCHEDULE_ID as string,
+    weeklyPlans: process.env.EXPO_PUBLIC_APPWRITE_COL_WEEKLY_PLAN_ID as string,
+    dailySessions: process.env
+      .EXPO_PUBLIC_APPWRITE_COL_DAILY_SESSION_ID as string,
+    activities: process.env.EXPO_PUBLIC_APPWRITE_COL_ACTIVITIES_ID as string,
+    milestones: process.env.EXPO_PUBLIC_APPWRITE_COL_MILESTONES_ID as string
   },
+
 };
 
 // Initialize the Appwrite client
 const client = new Client();
 client.setEndpoint(config.endpoint || "").setProject(config.projectId || "");
+client.setDevKey(config.devKey || "");
 
 // Set platform based on OS
 switch (Platform.OS) {

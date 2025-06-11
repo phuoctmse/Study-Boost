@@ -146,15 +146,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
-    marginTop: 65, // Add some top margin to account for the Navbar
+    paddingBottom: 90,
+    marginTop: 65,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
     color: '#353859',
     textAlign: 'center',
-    marginTop: 20,
   },
   subtitle: {
     fontSize: 16,
