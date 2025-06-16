@@ -1,16 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Dimensions, 
-  Image, 
-  Modal,
-  ImageBackground,
-  ScrollView
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useRef, useState } from 'react';
+import {
+    Dimensions,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
@@ -42,6 +41,7 @@ const PomodoroScreen = () => {
   const [backgroundColor, setBackgroundColor] = useState(backgrounds[0]);
   const [backgroundImageIndex, setBackgroundImageIndex] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showVerification, setShowVerification] = useState(true);
   
   // Study goal
   const [dailyGoal] = useState(4 * 60); // 4 hours in minutes
@@ -184,6 +184,20 @@ const PomodoroScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
+      {showVerification && (
+        <View style={styles.verificationContainer}>
+          <View style={styles.verificationContent}>
+            <Ionicons name="checkmark-circle" size={40} color="#4CAF50" />
+            <Text style={styles.verificationText}>Your account is verified, enjoy using app!</Text>
+            <TouchableOpacity 
+              style={styles.verificationButton}
+              onPress={() => setShowVerification(false)}
+            >
+              <Text style={styles.verificationButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       {!focusMode ? (
         // Regular mode UI
         <View style={styles.content}>
@@ -606,6 +620,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#bc4749',
   },
   modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  verificationContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  verificationContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 15,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 400,
+  },
+  verificationText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#353859',
+    textAlign: 'center',
+    marginVertical: 15,
+  },
+  verificationButton: {
+    backgroundColor: '#737AA8',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginTop: 10,
+  },
+  verificationButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
