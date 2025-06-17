@@ -92,17 +92,14 @@ export default function Survey() {
       } else {
         console.log("Sending to n8n:", { userId, responses: updatedResponses });
         const data = await sendSurveyToN8n(userId, updatedResponses);
-        console.log('test data get from n8n', data) //thằng này cần trả đúng kiểu n8nSurveyData
-        //Promise. all save daily session , weekly plan , milestone
-        //Lấy id của 3 thằng trên lưu vào study schedule
-        //Trả về response tạo mới document study schedule thành công
-        //Cần phải cho user đợi để hoàn thành các thao tác trên 
+        console.log('test data get from n8n', data)
         setResponses([]);
         setSurveyCompleted(true);
       }
     } catch (err: any) {
       console.error("Error processing response:", err);
       setError("Failed to submit survey response. Please try again.");
+      router.replace("/(authenticated)/pomodoro");
     } finally {
       setSubmitting(false);
     }
