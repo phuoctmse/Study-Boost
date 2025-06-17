@@ -1,24 +1,270 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getCurrentUserProfile, logout } from '../../api/auth';
+
+const COLOR_BG = '#737AA8';
+const COLOR_CARD = '#F5F5F7';
+const COLOR_ACCENT = '#FCC89B';
+const COLOR_TEXT = '#fff';
+const COLOR_PRIMARY = '#353859';
 
 export default function Profile() {
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [website, setWebsite] = useState('');
+  const [location, setLocation] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await getCurrentUserProfile();
+        setName(user.name || '');
+        setEmail(user.email || '');
+        // Optionally set phone, website, location if you store them in user prefs
+      } catch (err) {
+        // fallback to demo data or show error
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/login');
+    } catch (error: any) {
+      Alert.alert('Logout failed', error.message || 'Please try again.');
+    }
+  };
+
+  const handleUpgrade = () => {
+    router.push('/(authenticated)/premium');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Profile Page</Text>
-    </View>
+    <ScrollView style={{ flex: 1, backgroundColor: COLOR_BG }} contentContainerStyle={{ paddingBottom: 32 }}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity>
+          <Ionicons name="arrow-back" size={26} color={COLOR_TEXT} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Ionicons name="settings-sharp" size={22} color={COLOR_ACCENT} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarGlow}>
+          <Image
+            source={avatar ? { uri: avatar } : require('../../assets/images/icon.png')}
+            style={styles.avatar}
+          />
+        </View>
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.activeText}>Active since - Jul. 2019</Text>
+        <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
+          <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.cardTitle}>Personal Information</Text>
+          <TouchableOpacity>
+            <Feather name="edit" size={18} color={COLOR_BG} />
+            <Text style={styles.editText}> Edit</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="email-outline" size={20} color={COLOR_BG} style={styles.infoIcon} />
+          <Text style={styles.infoLabel}>Email</Text>
+          <Text style={styles.infoValue}>{email}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Feather name="phone" size={20} color={COLOR_BG} style={styles.infoIcon} />
+          <Text style={styles.infoLabel}>Phone</Text>
+          <Text style={styles.infoValue}>{phone}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Feather name="globe" size={20} color={COLOR_BG} style={styles.infoIcon} />
+          <Text style={styles.infoLabel}>Website</Text>
+          <Text style={styles.infoValue}>{website}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="location-outline" size={20} color={COLOR_BG} style={styles.infoIcon} />
+          <Text style={styles.infoLabel}>Location</Text>
+          <Text style={styles.infoValue}>{location}</Text>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Utilities</Text>
+        <TouchableOpacity style={styles.utilityRow}>
+          <Feather name="download" size={20} color={COLOR_BG} style={styles.utilityIcon} />
+          <Text style={styles.utilityText}>Downloads</Text>
+          <Ionicons name="chevron-forward" size={20} color={COLOR_BG} style={styles.utilityChevron} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.utilityRow}>
+          <Feather name="bar-chart-2" size={20} color={COLOR_BG} style={styles.utilityIcon} />
+          <Text style={styles.utilityText}>Usage Analytics</Text>
+          <Ionicons name="chevron-forward" size={20} color={COLOR_BG} style={styles.utilityChevron} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.utilityRow}>
+          <Feather name="help-circle" size={20} color={COLOR_BG} style={styles.utilityIcon} />
+          <Text style={styles.utilityText}>Ask Help-Desk</Text>
+          <Ionicons name="chevron-forward" size={20} color={COLOR_BG} style={styles.utilityChevron} />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.utilityRow, { borderBottomWidth: 0 }]} onPress={handleLogout}>
+          <Feather name="log-out" size={20} color={COLOR_ACCENT} style={styles.utilityIcon} />
+          <Text style={[styles.utilityText, { color: COLOR_ACCENT }]}>Log-Out</Text>
+          <Ionicons name="chevron-forward" size={20} color={COLOR_ACCENT} style={styles.utilityChevron} />
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#737AA8',
+    marginTop: 18,
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
-  text: {
-    fontSize: 24,
-    color: '#FFF',
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  avatarGlow: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: '#FCC89B33',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    shadowColor: '#FCC89B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#bfc3d9',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  name: {
+    fontSize: 22,
     fontWeight: 'bold',
+    color: COLOR_TEXT,
+    marginTop: 2,
   },
-}); 
+  activeText: {
+    color: '#FFD6B0',
+    fontSize: 13,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  card: {
+    backgroundColor: COLOR_CARD,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 18,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: COLOR_BG,
+  },
+  editText: {
+    color: COLOR_BG,
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    paddingVertical: 10,
+    gap: 8,
+  },
+  infoIcon: {
+    marginRight: 2,
+  },
+  infoLabel: {
+    color: '#737AA8',
+    fontWeight: 'bold',
+    fontSize: 13,
+    width: 70,
+  },
+  infoValue: {
+    color: '#353859',
+    fontSize: 15,
+    flex: 1,
+    textAlign: 'right',
+    fontWeight: '600',
+  },
+  utilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    paddingVertical: 14,
+    gap: 10,
+  },
+  utilityIcon: {
+    marginRight: 2,
+  },
+  utilityText: {
+    color: '#353859',
+    fontWeight: 'bold',
+    fontSize: 15,
+    flex: 1,
+  },
+  utilityChevron: {
+    marginLeft: 2,
+  },
+  upgradeButton: {
+    backgroundColor: '#FFD600',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    marginTop: 10,
+    marginBottom: 8,
+    alignItems: 'center',
+    alignSelf: 'center',
+    shadowColor: '#FFD600',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  upgradeButtonText: {
+    color: '#353859',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});

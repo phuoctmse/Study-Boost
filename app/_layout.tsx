@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import LoadingScreen from "../components/LoadingScreen";
 

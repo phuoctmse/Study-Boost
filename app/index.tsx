@@ -1,17 +1,17 @@
 import { getSurveyQuestions } from "@/api/survey/survey";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Models } from "react-native-appwrite";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,7 +40,7 @@ export default function Index() {
 
     checkSession();
     getSurveyQuestions();
-  }, [isLoading]);
+  }, []);
 
   const handleLogout = async () => {
     try {
