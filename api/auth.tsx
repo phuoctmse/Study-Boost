@@ -36,7 +36,7 @@ export const register = async (
     console.log('User document created:', document);
     const session = await account.createEmailPasswordSession(email, password);
     console.log('User registered and session created:', session);
-    const sendEmail = await account.createVerification('http://localhost:3000/verify')
+    const sendEmail = await account.createVerification('https://study-boost-website.vercel.app/verify')
     console.log('email sent', sendEmail)
     return response;
   } catch (error: any) {
@@ -46,7 +46,9 @@ export const register = async (
 
 export const forgotPassword = async (email: string) => {
   try {
-    const response = await account.createRecovery(email, "http://localhost:3000/reset-password");
+    console.log('Forgot password response:', email);
+    const response = await account.createRecovery(email, "https://study-boost-website.vercel.app/recover");
+    console.log('Forgot password response:', response);
     return response;
   } catch (error: any) {
     throw new Error(`Forgot password failed: ${error.message}`);

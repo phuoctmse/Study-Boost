@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { login as appwriteLogin } from "../api/auth";
+import { forgotPassword, login } from "../api/auth";
 import LoadingScreen from "../components/LoadingScreen";
 
 export default function Login() {
@@ -22,6 +22,9 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<string | null>(null);
+
   async function handleLogin() {
     if (!email || !password) {
       setError("Please fill in all fields");
@@ -38,7 +41,7 @@ export default function Login() {
       }
 
       // Use the Appwrite login function from the API
-      await appwriteLogin(email, password);
+      await login(email, password);
 
       // Navigate to the authenticated layout with pomodoro page
       router.replace("/(authenticated)/pomodoro");
@@ -50,7 +53,29 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  }  return (
+  }
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+    
+    setForgotPasswordLoading(true);
+    setForgotPasswordMessage(null);
+    setError(null);
+    
+    try {
+      await forgotPassword(email);
+      setForgotPasswordMessage("Password recovery email sent! Please check your inbox.");
+    } catch (err: any) {
+      setError(err.message || "Failed to send recovery email. Please try again.");
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  return (
     <SafeAreaView style={styles.container}>
       {isLoading && <LoadingScreen message="Logging in..." />}
       
@@ -138,6 +163,17 @@ export default function Login() {
               <Text style={styles.registerLink}>Register Now</Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>Forgot password? </Text>
+            <TouchableOpacity onPress={handleForgotPassword} disabled={forgotPasswordLoading}>
+              <Text style={styles.registerLink}>
+                {forgotPasswordLoading ? "Sending..." : "Click here"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {forgotPasswordMessage && (
+            <Text style={styles.successMessage}>{forgotPasswordMessage}</Text>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -253,6 +289,12 @@ const styles = StyleSheet.create({
   registerLink: {
     color: "#FFFFFF",
     fontWeight: "bold",
+    fontSize: 14,
+  },
+  successMessage: {
+    color: "#4CAF50",
+    textAlign: "center",
+    marginTop: 10,
     fontSize: 14,
   },
 });
