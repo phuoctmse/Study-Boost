@@ -1,7 +1,7 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
-import { ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 const FOCUS_MIN = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
@@ -13,24 +13,33 @@ const SOUNDS = [
   { name: 'Breeze', icon: 'wind' },
   { name: 'Rain', icon: 'cloud-rain' },
 ];
-
+const MUSIC_INFO = [
+  {
+    title: 'In & Out',
+    artist: 'Red Velvet',
+    file: require('../../assets/music/music-1.mp3'),
+    cover: require('../../assets/images/background-1.jpg'),
+    duration: 373,
+  },
+  {
+    title: 'Song 2',
+    artist: 'Red Velvet',
+    file: require('../../assets/music/music-2.mp3'),
+    cover: require('../../assets/images/background-2.jpg'),
+    duration: 373,
+  },
+];
 const TIMER_STATES = {
   FOCUS: 'FOCUS',
   BREAK: 'BREAK',
   LONG_BREAK: 'LONG_BREAK',
 };
-
-const CIRCLE_LENGTH = 260; // circumference for progress circle
+const CIRCLE_LENGTH = 260;
 const RADIUS = 42;
-
 const BACKGROUND_IMAGES = [
   require('../../assets/images/background-1.jpg'),
   require('../../assets/images/background-2.jpg'),
   require('../../assets/images/background-3.jpg'),
-];
-const MUSIC_FILES = [
-  require('../../assets/music/music-1.mp3'),
-  require('../../assets/music/music-2.mp3'),
 ];
 const MOTIVATIONAL_QUOTES = [
   'Stay focused and never give up!',
@@ -55,10 +64,21 @@ export default function Pomodoro() {
   const [round, setRound] = useState(1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showBgModal, setShowBgModal] = useState(false);
+  const [showMusicModal, setShowMusicModal] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
   const [musicIndex, setMusicIndex] = useState(0);
   const [quote, setQuote] = useState(MOTIVATIONAL_QUOTES[0]);
   const [completed, setCompleted] = useState(0); // Pomodoros completed today
+
+  // Music player state
+  const [musicPosition, setMusicPosition] = useState(0);
+  const [musicDuration, setMusicDuration] = useState(0);
+
+  // Info: subject and study time left
+  const [subject] = useState('Math');
+  const [goalMinutes] = useState(60); // daily goal
+  const [studyLeft, setStudyLeft] = useState(goalMinutes * 60); // in seconds
 
   // Update timer when settings change
   useEffect(() => {
@@ -67,7 +87,7 @@ export default function Pomodoro() {
     if (timerState === TIMER_STATES.LONG_BREAK) setSecondsLeft(longBreak * 60);
   }, [focus, breakTime, longBreak, timerState]);
 
-  // Timer logic
+  // Timer logic (decrement both timer and studyLeft if running and in FOCUS)
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
@@ -79,6 +99,9 @@ export default function Pomodoro() {
           }
           return prev - 1;
         });
+        if (timerState === TIMER_STATES.FOCUS) {
+          setStudyLeft((prev) => (prev > 0 ? prev - 1 : 0));
+        }
       }, 1000);
     }
     return () => {
@@ -110,8 +133,24 @@ export default function Pomodoro() {
         await sound.stopAsync();
         await sound.unloadAsync();
       }
-      const { sound: newSound } = await Audio.Sound.createAsync(MUSIC_FILES[musicIndex], { shouldPlay: true, isLooping: true });
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        MUSIC_INFO[musicIndex].file, 
+        { shouldPlay: true, isLooping: true }
+      );
       setSound(newSound);
+      
+      // Get duration and set up position tracking
+      const status = await newSound.getStatusAsync();
+      if (status.isLoaded) {
+        setMusicDuration(status.durationMillis || 0);
+      }
+      
+      // Update position every second
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded) {
+          setMusicPosition(status.positionMillis || 0);
+        }
+      });
     } catch (e) {
       // handle error
     }
@@ -124,10 +163,6 @@ export default function Pomodoro() {
     }
   };
 
-  // Change background
-  const handleChangeBg = () => setBgIndex((i) => (i + 1) % BACKGROUND_IMAGES.length);
-  // Change music
-  const handleChangeMusic = () => setMusicIndex((i) => (i + 1) % MUSIC_FILES.length);
   // Random quote
   useEffect(() => {
     setQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
@@ -161,6 +196,21 @@ export default function Pomodoro() {
     return `${m}:${sec}`;
   };
 
+  const formatMusicTime = (millis: number) => {
+    const totalSeconds = Math.floor(millis / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSliderValueChange = async (value: number) => {
+    if (sound) {
+      const newPosition = value * musicDuration;
+      await sound.setPositionAsync(newPosition);
+      setMusicPosition(newPosition);
+    }
+  };
+
   // Progress for circular timer
   const getProgress = () => {
     let total = focus * 60;
@@ -168,6 +218,19 @@ export default function Pomodoro() {
     if (timerState === TIMER_STATES.LONG_BREAK) total = longBreak * 60;
     return 1 - secondsLeft / total;
   };
+
+  // Info component
+  const Info = () => (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoSubject}>{subject}</Text>
+      <Text style={styles.infoMainText}>{Math.ceil(studyLeft / 60)} minutes left for today</Text>
+      <Text style={styles.infoSubText}>({new Date().toLocaleDateString('en-US')})</Text>
+      <View style={styles.progressBarBg}>
+        <View style={[styles.progressBarFill, { width: `${Math.min(((goalMinutes * 60 - studyLeft) / (goalMinutes * 60)) * 100, 100)}%` }]} />
+      </View>
+      <Text style={styles.infoSubText}>Completed: {Math.floor((goalMinutes * 60 - studyLeft) / 60)}/{goalMinutes} min</Text>
+    </View>
+  );
 
   // Settings pickers
   const renderPicker = (label: string, value: number, setValue: (v: number) => void, options: number[]) => (
@@ -203,40 +266,100 @@ export default function Pomodoro() {
     </View>
   );
 
+  // Background modal
+  const renderBgModal = () => (
+    <Modal visible={showBgModal} animationType="slide" transparent>
+      <View style={styles.modalBg}>
+        <View style={styles.settingsCard}>
+          <View style={styles.settingsHeader}>
+            <TouchableOpacity onPress={() => setShowBgModal(false)}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.settingsTitle}>Select Background</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          {BACKGROUND_IMAGES.map((img, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.backgroundOption, bgIndex === index && styles.backgroundOptionActive]}
+              onPress={() => {
+                setBgIndex(index);
+                setShowBgModal(false);
+              }}
+            >
+              <Text style={[styles.backgroundText, bgIndex === index && styles.backgroundTextActive]}>Background {index + 1}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Music modal (music player style)
+  const renderMusicModal = () => (
+    <Modal visible={showMusicModal} animationType="slide" transparent>
+      <View style={styles.modalBg}>
+        <View style={styles.musicPlayerContainer}>
+          <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 16 }} onPress={() => setShowMusicModal(false)}>
+            <Ionicons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Image source={MUSIC_INFO[musicIndex].cover} style={styles.musicCover} />
+          
+          {/* Music Slider */}
+          <View style={styles.musicSliderContainer}>
+            <View style={styles.musicProgressBar}>
+              <View 
+                style={[
+                  styles.musicProgressFill, 
+                  { width: `${musicDuration ? (musicPosition / musicDuration) * 100 : 0}%` }
+                ]} 
+              />
+              <TouchableOpacity 
+                style={[
+                  styles.musicSliderThumb, 
+                  { left: `${musicDuration ? (musicPosition / musicDuration) * 100 : 0}%` }
+                ]}
+                onPress={() => {}}
+              />
+            </View>
+            <View style={styles.musicTimeContainer}>
+              <Text style={styles.musicTime}>{formatMusicTime(musicPosition)}</Text>
+              <Text style={styles.musicTime}>{formatMusicTime(musicDuration)}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.musicTitle}>{MUSIC_INFO[musicIndex].title}</Text>
+          <Text style={styles.musicArtist}>{MUSIC_INFO[musicIndex].artist}</Text>
+          <View style={styles.musicControlsRow}>
+            <TouchableOpacity onPress={() => setMusicIndex((i) => (i - 1 + MUSIC_INFO.length) % MUSIC_INFO.length)}>
+              <Ionicons name="play-skip-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setIsRunning((r) => !r)} style={styles.musicPlayButton}>
+              <Ionicons name={isRunning ? 'pause' : 'play'} size={28} color="#333" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setMusicIndex((i) => (i + 1) % MUSIC_INFO.length)}>
+              <Ionicons name="play-skip-forward" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Main render
   return (
     <ImageBackground source={BACKGROUND_IMAGES[bgIndex]} style={styles.bg} resizeMode="cover">
-      {/* Settings Modal */}
-      <Modal visible={showSettings} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={styles.settingsCard}>
-            <View style={styles.settingsHeader}>
-              <TouchableOpacity onPress={() => setShowSettings(false)}>
-                <Ionicons name="arrow-back" size={24} color="#333" />
-              </TouchableOpacity>
-              <Text style={styles.settingsTitle}>Settings</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            {renderPicker('Focus', focus, setFocus, FOCUS_MIN)}
-            {renderPicker('Break', breakTime, setBreakTime, BREAK_MIN)}
-            {renderPicker('Long break', longBreak, setLongBreak, LONG_BREAK_MIN)}
-            <Text style={styles.sectionLabel}>Sound</Text>
-            {renderSoundPicker()}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Timer Screen - full width, no card */}
+      {renderBgModal()}
+      {renderMusicModal()}
       <View style={styles.timerScreen}>
         <View style={styles.timerHeaderMinimal}>
-          <TouchableOpacity onPress={handleChangeBg}>
+          <TouchableOpacity onPress={() => setShowBgModal(true)}>
             <Ionicons name="image-outline" size={24} color="#AAA" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleChangeMusic}>
+          <TouchableOpacity onPress={() => setShowMusicModal(true)}>
             <Ionicons name="musical-notes-outline" size={24} color="#AAA" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.practiceLabelMinimal}>Design Practice</Text>
         <View style={styles.circleWrapperMinimal}>
           <Svg width={220} height={220}>
             <Circle
@@ -271,9 +394,7 @@ export default function Pomodoro() {
           <Ionicons name={isRunning ? 'pause' : 'play'} size={36} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.quote}>{quote}</Text>
-      </View>
-      <View style={styles.goalTracker}>
-        <Text style={styles.goalText}>Today: {completed}/4 Pomodoros completed</Text>
+        <Info />
       </View>
     </ImageBackground>
   );
@@ -300,13 +421,6 @@ const styles = StyleSheet.create({
     width: '90%',
     marginBottom: 8,
     alignSelf: 'center',
-  },
-  practiceLabelMinimal: {
-    color: '#AAA',
-    fontSize: 20,
-    marginBottom: 8,
-    alignSelf: 'center',
-    fontWeight: '500',
   },
   circleWrapperMinimal: {
     alignItems: 'center',
@@ -454,20 +568,144 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
-  goalTracker: {
-    position: 'absolute',
-    bottom: 24,
-    left: 0,
-    right: 0,
+  infoCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 24,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
     alignItems: 'center',
   },
-  goalText: {
-    fontSize: 15,
+  infoSubject: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#333',
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  infoMainText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 8,
+  },
+  infoSubText: {
+    fontSize: 14,
+    color: '#AAA',
+  },
+  progressBarBg: {
+    backgroundColor: '#F3F3F3',
     borderRadius: 16,
-    overflow: 'hidden',
+    padding: 2,
+    width: '100%',
+    marginBottom: 16,
+  },
+  progressBarFill: {
+    backgroundColor: '#FF7B86',
+    borderRadius: 12,
+    padding: 2,
+    width: '0%',
+  },
+  musicPlayerContainer: {
+    backgroundColor: '#737AA8',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    width: '85%',
+    maxWidth: 350,
+  },
+  musicCover: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  musicTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  musicArtist: {
+    fontSize: 14,
+    color: '#FFF',
+    opacity: 0.8,
+    marginBottom: 24,
+  },
+  musicControlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '70%',
+  },
+  musicPlayButton: {
+    backgroundColor: '#FCC89B',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FCC89B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  musicSliderContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  musicProgressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    marginBottom: 8,
+    position: 'relative',
+  },
+  musicProgressFill: {
+    height: '100%',
+    backgroundColor: '#FCC89B',
+    borderRadius: 2,
+  },
+  musicSliderThumb: {
+    position: 'absolute',
+    top: -4,
+    width: 12,
+    height: 12,
+    backgroundColor: '#FCC89B',
+    borderRadius: 6,
+    marginLeft: -6,
+  },
+  musicTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  musicTime: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  backgroundOption: {
+    backgroundColor: '#F3F3F3',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginVertical: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  backgroundOptionActive: {
+    backgroundColor: '#FF7B86',
+  },
+  backgroundText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  backgroundTextActive: {
+    color: '#FFF',
+    fontWeight: 'bold',
   },
 });

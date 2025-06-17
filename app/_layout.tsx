@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import LoadingScreen from "../components/LoadingScreen";
-import PomodoroWidget from '../components/PomodoroWidget';
 
 export default function RootLayout() {
   const [initialLoading, setInitialLoading] = useState(true);
@@ -19,7 +18,6 @@ export default function RootLayout() {
     return (
     <SafeAreaProvider style={{ backgroundColor: '#737AA8' }}>
       {initialLoading && <LoadingScreen message="Starting Study Boost..." />}
-      <PomodoroWidget />
       <Stack 
         screenOptions={{
           headerShown: false, // This hides the header on all screens
