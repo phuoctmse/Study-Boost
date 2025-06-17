@@ -1,8 +1,8 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { logout } from '../../api/auth';
+import { getCurrentUserProfile, logout } from '../../api/auth';
 
 const COLOR_BG = '#737AA8';
 const COLOR_CARD = '#F5F5F7';
@@ -12,13 +12,26 @@ const COLOR_PRIMARY = '#353859';
 
 export default function Profile() {
   const [avatar, setAvatar] = useState<string | null>(null);
-  // Demo data
-  const [name] = useState('Victoria Heard');
-  const [email] = useState('heard_j@gmail.com');
-  const [phone] = useState('9898712132');
-  const [website] = useState('www.randomweb.com');
-  const [location] = useState('Antigua');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [website, setWebsite] = useState('');
+  const [location, setLocation] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await getCurrentUserProfile();
+        setName(user.name || '');
+        setEmail(user.email || '');
+        // Optionally set phone, website, location if you store them in user prefs
+      } catch (err) {
+        // fallback to demo data or show error
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -27,6 +40,10 @@ export default function Profile() {
     } catch (error: any) {
       Alert.alert('Logout failed', error.message || 'Please try again.');
     }
+  };
+
+  const handleUpgrade = () => {
+    router.push('/(authenticated)/premium');
   };
 
   return (
@@ -48,6 +65,9 @@ export default function Profile() {
         </View>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.activeText}>Active since - Jul. 2019</Text>
+        <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
+          <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
@@ -226,5 +246,25 @@ const styles = StyleSheet.create({
   },
   utilityChevron: {
     marginLeft: 2,
+  },
+  upgradeButton: {
+    backgroundColor: '#FFD600',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    marginTop: 10,
+    marginBottom: 8,
+    alignItems: 'center',
+    alignSelf: 'center',
+    shadowColor: '#FFD600',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  upgradeButtonText: {
+    color: '#353859',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

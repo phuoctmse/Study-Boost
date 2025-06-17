@@ -63,3 +63,12 @@ export const getCurrentUser = async () => {
     throw new Error(`Failed to get current user: ${error.message}`);
   }
 };
+
+export const getCurrentUserProfile = async () => {
+  try {
+    const user = await account.get();
+    return user;
+  } catch (error: any) {
+    throw new Error(`Failed to get current user profile: ${error.message}`);
+  }
+};

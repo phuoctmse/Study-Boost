@@ -20,7 +20,9 @@ const config = {
     dailySessions: process.env
       .EXPO_PUBLIC_APPWRITE_COL_DAILY_SESSION_ID as string,
     activities: process.env.EXPO_PUBLIC_APPWRITE_COL_ACTIVITIES_ID as string,
-    milestones: process.env.EXPO_PUBLIC_APPWRITE_COL_MILESTONES_ID as string
+    milestones: process.env.EXPO_PUBLIC_APPWRITE_COL_MILESTONES_ID as string,
+    chatRooms: process.env.EXPO_PUBLIC_APPWRITE_COL_CHATROOMS_ID as string,
+    aiChatMessages: process.env.EXPO_PUBLIC_APPWRITE_COL_AICHATMESSAGES_ID as string
   },
 
 };
