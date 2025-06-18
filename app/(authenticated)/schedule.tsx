@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ type SessionInfo = {
 const ScheduleScreen = () => {
   const [currentWeekIndex, setCurrentWeekIndex] = useState<number>(0);
   const [selectedDay, setSelectedDay] = useState<number>(0);
+  const router = useRouter();
   
   // Mock data - in a real app this would come from an API or local storage
   const days: DayInfo[] = [
@@ -145,16 +147,13 @@ const ScheduleScreen = () => {
       );
     });
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Study Session</Text>
-      
       {renderStats()}
-      
       <View style={styles.calendarContainer}>
         {renderCalendarHeader()}
-        
         <ScrollView style={styles.timeGrid}>
           <View style={styles.timeSlotsContainer}>
             {hours.map((hour, index) => (
@@ -162,27 +161,12 @@ const ScheduleScreen = () => {
                 <View style={styles.timeColumn}>
                   <Text style={styles.timeText}>{hour}.00</Text>
                 </View>
-                
                 <View style={styles.timeSlotRow} />
               </View>
             ))}
-            
-            {/* Position the sessions absolutely over the time grid */}
             {renderSessions()}
           </View>
         </ScrollView>
-        
-        {/* <View style={styles.weekNavigator}>
-          <TouchableOpacity onPress={() => navigateWeek('prev')} style={styles.weekButton}>
-            <Ionicons name="chevron-back" size={24} color="#555" />
-          </TouchableOpacity>
-          
-          <Text style={styles.weekText}>Tuần {currentWeekIndex + 1}</Text>
-          
-          <TouchableOpacity onPress={() => navigateWeek('next')} style={styles.weekButton}>
-            <Ionicons name="chevron-forward" size={24} color="#555" />
-          </TouchableOpacity>
-        </View> */}
       </View>
     </SafeAreaView>
   );

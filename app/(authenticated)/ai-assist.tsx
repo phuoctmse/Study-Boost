@@ -1,8 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -23,6 +25,9 @@ interface Message {
   timestamp: Date;
 }
 
+console.log('Appwrite DB ID:', config.databaseId);
+console.log('Users Collection ID:', config.collections.users);
+
 export default function AIAssist() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -30,8 +35,9 @@ export default function AIAssist() {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [chatRooms, setChatRooms] = useState<any[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [chatRoomTitle, setChatRoomTitle] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -54,7 +60,7 @@ export default function AIAssist() {
 
   const handleSelectChatRoom = async (roomId: string) => {
     setChatRoomId(roomId);
-    setShowDropdown(false);
+    setSidebarVisible(false);
     setLoading(true);
     try {
       const msgs = await databases.listDocuments(
@@ -148,21 +154,13 @@ export default function AIAssist() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => setSidebarVisible(true)}>
+          <Feather name="menu" size={28} color="#FFF" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>AI Assistant</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity
-            style={styles.dropdownButton}
-            onPress={() => setShowDropdown(!showDropdown)}
-            disabled={loading || chatRooms.length === 0}
-          >
-            <Ionicons name="chevron-down" size={20} color="#007AFF" />
-            <Text style={{ marginLeft: 4, color: '#007AFF', fontWeight: 'bold' }}>Recent chat</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.chatroomButton} onPress={handleNewChat} disabled={loading}>
-            <Ionicons name="chatbubbles-outline" size={24} color="#007AFF" />
-            <Text style={{ marginLeft: 6, color: '#007AFF', fontWeight: 'bold' }}>New Chat</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.chatroomButton} onPress={handleNewChat} disabled={loading}>
+          <Ionicons name="chatbubbles-outline" size={24} color="#007AFF" />
+        </TouchableOpacity>
       </View>
       {/* Chat Room Title */}
       {chatRoomTitle && (
@@ -171,40 +169,73 @@ export default function AIAssist() {
           <Text style={styles.chatRoomTitle}>{chatRoomTitle}</Text>
         </View>
       )}
-      {/* Dropdown for recent chats */}
-      {showDropdown && (
-        <View style={styles.dropdownList}>
-          {chatRooms.map(room => (
+      {/* Sidebar Modal for Recent Chats */}
+      <Modal
+        visible={sidebarVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSidebarVisible(false)}
+      >
+        <View style={styles.sidebarOverlay}>
+          <View style={styles.sidebar}>
             <TouchableOpacity
-              key={room.$id}
-              style={styles.dropdownItem}
-              onPress={() => handleSelectChatRoom(room.$id)}
+              style={styles.closeSidebarButton}
+              onPress={() => setSidebarVisible(false)}
             >
-              <Text>{room.title || room.$id}</Text>
+              <Ionicons name="close" size={28} color="#737AA8" />
             </TouchableOpacity>
-          ))}
+            <Text style={styles.sidebarTitle}>Đoạn chat gần đây</Text>
+            <FlatList
+              data={chatRooms}
+              keyExtractor={item => item.$id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.chatItem}
+                  onPress={() => handleSelectChatRoom(item.$id)}
+                >
+                  <Text style={styles.chatItemText}>{item.title || item.$id}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
         </View>
-      )}
-      {/* Chat Messages Area with white border */}
+      </Modal>
+      {/* Chat Messages Area or Centered Prompt */}
       <View style={styles.chatroomArea}>
-        <FlatList
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.messagesList}
-          inverted={false}
-        />
+        {messages.length === 0 && !chatRoomId ? (
+          <View style={styles.centerContent}>
+            <Text style={styles.promptText}>Tôi có thể giúp gì cho bạn?</Text>
+            <TouchableOpacity
+              style={styles.newChatButton}
+              onPress={handleNewChat}
+              disabled={loading}
+            >
+              <Text style={styles.newChatButtonText}>Bắt đầu cuộc trò chuyện mới</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.messagesList}
+            inverted={false}
+          />
+        )}
       </View>
       {/* Input Area */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.inputContainer}
       >
+        <TouchableOpacity>
+          <Feather name="sliders" size={22} color="#FCC89B" />
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           value={inputText}
           onChangeText={setInputText}
-          placeholder={chatRoomId ? 'Type your message...' : 'Start a new chat to begin'}
+          placeholder={chatRoomId ? 'Type your message...' : ''}
           multiline
           editable={!!chatRoomId && !loading}
         />
@@ -243,30 +274,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCC89B',
     borderRadius: 15,
   },
-  dropdownButton: {
+  sidebarOverlay: {
+    flex: 1,
+    backgroundColor: "transparent",
+    flexDirection: "row",
+  },
+  sidebar: {
+    width: '50%',
+    maxWidth: 350,
+    height: '95%',
+    backgroundColor: "#fff",
+    paddingTop: 48,
+    paddingBottom: 32,
+    paddingHorizontal: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 100,
+  },
+  sidebarTitle: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 18,
+    color: "#737AA8",
+  },
+  chatItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  chatItemText: {
+    color: "#333",
+    fontSize: 16,
+  },
+  chatRoomTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#E5E5EA',
-    borderRadius: 15,
-    marginRight: 8,
+    justifyContent: 'center',
+    marginBottom: 4,
   },
-  dropdownList: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-    zIndex: 10,
-  },
-  dropdownItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  chatRoomTitle: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 2,
   },
   chatroomArea: {
     flex: 1,
@@ -282,6 +337,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     overflow: 'hidden',
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  promptText: {
+    color: "#737AA8",
+    fontSize: 22,
+    fontWeight: "500",
+    textAlign: "center",
   },
   messagesList: {
     padding: 8,
@@ -344,16 +410,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCC89B',
     borderRadius: 15,
   },
-  chatRoomTitleContainer: {
-    flexDirection: 'row',
+  newChatButton: {
+    marginTop: 24,
+    backgroundColor: '#FCC89B',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+    alignSelf: 'center',
+    shadowColor: '#FCC89B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  chatRoomTitle: {
-    fontSize: 25,
+  newChatButtonText: {
+    color: '#353859',
     fontWeight: 'bold',
-    color: 'white',
-    marginTop: 2,
+    fontSize: 16,
+  },
+  closeSidebarButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 101,
+    padding: 4,
   },
 });

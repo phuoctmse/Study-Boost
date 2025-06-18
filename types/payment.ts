@@ -1,6 +1,6 @@
 export interface Payment {
   package_id: string;
-  payment_transaction_id: string;
+  payment_transaction_id?: string;
   user_id: string;
   started_at: Date;
   ended_at: Date;

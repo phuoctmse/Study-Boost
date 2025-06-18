@@ -1,12 +1,32 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { getCurrentUser } from '@/api/auth';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PremiumPage = () => {
-  const handlePurchase = () => {
-    // Implement purchase logic here
-    alert('Thank you for purchasing Premium!');
+  const router = useRouter();
+
+  const handlePurchase = async () => {
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      // Navigate to payment-process page instead of opening a URL
+      router.push('/payment-process');
+    } catch (error) {
+      console.error('Purchase error:', error);
+      Alert.alert(
+        'Purchase Error',
+        'Please make sure you are logged in to purchase premium.',
+        [
+          { text: 'OK', onPress: () => router.push('/login') }
+        ]
+      );
+    }
   };
 
   return (

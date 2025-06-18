@@ -17,6 +17,7 @@ export default function Profile() {
   const [phone, setPhone] = useState('');
   const [website, setWebsite] = useState('');
   const [location, setLocation] = useState('');
+  const [subscriptionPlan, setSubscriptionPlan] = useState('free');
   const router = useRouter();
 
   useEffect(() => {
@@ -25,9 +26,11 @@ export default function Profile() {
         const user = await getCurrentUserProfile();
         setName(user.name || '');
         setEmail(user.email || '');
-        // Optionally set phone, website, location if you store them in user prefs
+        // Set default subscription plan to free
+        setSubscriptionPlan('free');
       } catch (err) {
-        // fallback to demo data or show error
+        console.error('Error fetching user data:', err);
+        Alert.alert('Error', 'Failed to load profile data');
       }
     };
     fetchUser();
@@ -68,10 +71,14 @@ export default function Profile() {
           />
         </View>
         <Text style={styles.name}>{name}</Text>
-        <Text style={styles.activeText}>Active since - Jul. 2019</Text>
-        <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
-          <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
-        </TouchableOpacity>
+        <Text style={styles.activeText}>
+          {subscriptionPlan === 'premium' ? 'Premium Plan' : 'Free Plan'}
+        </Text>
+        {subscriptionPlan !== 'premium' && (
+          <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
+            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.card}>

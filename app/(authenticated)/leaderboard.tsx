@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Animated } from 'react-native';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +17,7 @@ interface UserRanking {
 const LeaderboardScreen = () => {
   const [activeTab, setActiveTab] = useState<'monthly' | 'point' | 'streak'>('monthly');
   const [fadeAnim] = useState(new Animated.Value(1));
+  const router = useRouter();
   
   // Add animation when switching tabs
   const handleTabChange = (tab: 'monthly' | 'point' | 'streak') => {
@@ -176,6 +177,7 @@ const LeaderboardScreen = () => {
       ))}
     </View>
   );
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Leaderboard</Text>
