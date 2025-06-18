@@ -8,7 +8,7 @@ const config = {
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID as string,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DB_ID as string,
   n8n: {
-    survey: process.env.EXPO_PUBLIC_N8N_SURVEY_TEST_URL as string
+    survey: process.env.EXPO_PUBLIC_N8N_SURVEY_TEST_URL as string,
   },
   collections: {
     surveyQuestions: process.env
@@ -24,7 +24,6 @@ const config = {
     chatRooms: process.env.EXPO_PUBLIC_APPWRITE_COL_CHATROOMS_ID as string,
     aiChatMessages: process.env.EXPO_PUBLIC_APPWRITE_COL_AICHATMESSAGES_ID as string
   },
-
 };
 
 // Initialize the Appwrite client
