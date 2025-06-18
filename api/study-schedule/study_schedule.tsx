@@ -5,19 +5,31 @@ import { config, databases } from "../index";
 
 export const sendSurveyToN8n = async (userId: string, responses: { questionId: string; response: string }[]): Promise<n8nSurveyData> => {
     try {
-        const response = await fetch(config.n8n.survey, {
+        // Log the request payload
+        const payload = {
+            userId,
+            responses,
+        };
+        console.log("Sending to n8n payload:", JSON.stringify(payload, null, 2));
+
+        const response = await fetch("https://n8n.minhphuoc.io.vn/webhook-test/survey/start", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Accept": "application/json",
             },
-            body: JSON.stringify({
-                userId,
-                responses,
-            }),
+            body: JSON.stringify(payload),
         });
 
+        // Log the response status and headers
+        console.log("N8N Response Status:", response.status);
+        console.log("N8N Response Headers:", response.headers);
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Try to get more error details
+            const errorText = await response.text();
+            console.error("N8N Error Response:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
         }
 
         const data = await response.json();

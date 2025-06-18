@@ -24,6 +24,7 @@ export default function Survey() {
   const [textResponse, setTextResponse] = useState<string>("");
   const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
   const [responses, setResponses] = useState<{ questionId: string; response: string }[]>([]);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const { user_id: userIdParam } = useLocalSearchParams();
 
   useEffect(() => {
@@ -73,7 +74,6 @@ export default function Survey() {
       return;
     }
 
-    // Ensure questionId is a string
     if (!currentQuestion.id) {
       setError("Invalid question ID. Please try again.");
       return;
@@ -90,16 +90,34 @@ export default function Survey() {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         setTextResponse("");
       } else {
-        console.log("Sending to n8n:", { userId, responses: updatedResponses });
-        const data = await sendSurveyToN8n(userId, updatedResponses);
-        console.log('test data get from n8n', data)
-        setResponses([]);
-        setSurveyCompleted(true);
+        setIsSaving(true);
+        try {
+          console.log("Final survey responses:", {
+            userId,
+            totalResponses: updatedResponses.length,
+            responses: updatedResponses
+          });
+
+          const data = await sendSurveyToN8n(userId, updatedResponses);
+          console.log('N8N Response:', data);
+
+          setResponses([]);
+          setSurveyCompleted(true);
+          
+          setTimeout(() => {
+            router.replace("/(authenticated)/pomodoro");
+          }, 2000);
+
+        } catch (error: any) {
+          console.error("Error sending to n8n:", error);
+          setError(`Failed to process survey: ${error.message}`);
+        } finally {
+          setIsSaving(false);
+        }
       }
     } catch (err: any) {
       console.error("Error processing response:", err);
       setError("Failed to submit survey response. Please try again.");
-      router.replace("/(authenticated)/pomodoro");
     } finally {
       setSubmitting(false);
     }

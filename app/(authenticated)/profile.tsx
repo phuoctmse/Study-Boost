@@ -38,7 +38,11 @@ export default function Profile() {
       await logout();
       router.replace('/login');
     } catch (error: any) {
-      Alert.alert('Logout failed', error.message || 'Please try again.');
+      Alert.alert(
+        'Logout Failed',
+        error.message || 'Failed to logout. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
