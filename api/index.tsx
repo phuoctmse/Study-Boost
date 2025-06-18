@@ -22,7 +22,9 @@ const config = {
     activities: process.env.EXPO_PUBLIC_APPWRITE_COL_ACTIVITIES_ID as string,
     milestones: process.env.EXPO_PUBLIC_APPWRITE_COL_MILESTONES_ID as string,
     chatRooms: process.env.EXPO_PUBLIC_APPWRITE_COL_CHATROOMS_ID as string,
-    aiChatMessages: process.env.EXPO_PUBLIC_APPWRITE_COL_AICHATMESSAGES_ID as string
+    aiChatMessages: process.env
+      .EXPO_PUBLIC_APPWRITE_COL_AICHATMESSAGES_ID as string,
+    payment: process.env.EXPO_PUBLIC_APPWRITE_COL_PAYMENT_ID as string,
   },
 };
 
@@ -52,4 +54,3 @@ console.log("Databases:", databases);
 const account = new Account(client);
 
 export { account, client, config, databases };
-
