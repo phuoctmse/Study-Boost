@@ -7,7 +7,7 @@ export const createPayment = async (payment: Payment) => {
     const response = await databases.createDocument(
       config.databaseId,
       config.collections.payment,
-      "SB" + ID.unique(),
+      ID.unique(),
       payment
     );
   } catch (error) {
