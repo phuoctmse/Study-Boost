@@ -25,6 +25,8 @@ const config = {
     aiChatMessages: process.env
       .EXPO_PUBLIC_APPWRITE_COL_AICHATMESSAGES_ID as string,
     payment: process.env.EXPO_PUBLIC_APPWRITE_COL_PAYMENT_ID as string,
+    leaderBoard: process.env.EXPO_PUBLIC_APPWRITE_COL_LEADERBOARD_ID as string,
+    package: process.env.EXPO_PUBLIC_APPWRITE_COL_PACKAGE_ID as string,
   },
 };
 
@@ -54,3 +56,4 @@ console.log("Databases:", databases);
 const account = new Account(client);
 
 export { account, client, config, databases };
+
