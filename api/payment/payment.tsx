@@ -10,6 +10,7 @@ export const createPayment = async (payment: Payment) => {
       ID.unique(),
       payment
     );
+    return response;
   } catch (error) {
     console.error("Payment creation error:", error);
     throw new Error(`Failed to create Payment: ${error}`);

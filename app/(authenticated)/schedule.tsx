@@ -72,60 +72,80 @@ const ScheduleScreen = () => {
   const hours = Array.from({ length: 12 }, (_, i) => 8 + i);
 
   useEffect(() => {
+    // Separate fetch functions
+    const fetchStudySchedules = async (userId: string) => {
+      return await getStudySchedulesByUserId(userId);
+    };
+
+    const fetchWeeklyPlans = async (weeklyPlanIds: string[]) => {
+      const plans = await getWeeklyPlansByIds(weeklyPlanIds);
+      return plans.map((doc: any) => ({
+        study_schedule_id: doc.study_schedule_id,
+        week: doc.week,
+        focus: doc.focus,
+        topics: doc.topics,
+        objective: doc.objective
+      }));
+    };
+
+    const fetchDailySessions = async (dailySessionIds: string[]) => {
+      return await getDailySessionsByIds(dailySessionIds);
+    };
+
+    const fetchActivities = async (dailySessionsRes: any[]) => {
+      let allActivityIds: string[] = [];
+      dailySessionsRes.forEach((ds: any) => {
+        if (Array.isArray(ds.activities_id)) {
+          allActivityIds = allActivityIds.concat(ds.activities_id);
+        }
+      });
+      return await getActivitiesByIds(allActivityIds);
+    };
+
+    const fetchMilestones = async (milestoneIds: any) => {
+      let ids = [];
+      if (Array.isArray(milestoneIds)) {
+        ids = milestoneIds;
+      } else if (typeof milestoneIds === 'string') {
+        ids = [milestoneIds];
+      }
+      if (ids.length > 0) {
+        const milestoneDocs = await getMilestonesByIds(ids);
+        return milestoneDocs.map((doc: any) => ({
+          id: typeof doc.id === 'number' ? doc.id : parseInt(doc.id),
+          description: doc.description,
+          target_completion: doc.target_completion,
+          study_schedule_id: doc.study_schedule_id,
+        }));
+      } else {
+        return [];
+      }
+    };
+
     const fetchSchedulesAndPlans = async () => {
       setLoadingSchedules(true);
       setLoading(true);
       try {
         const user = await getCurrentUser();
-        const schedules = await getStudySchedulesByUserId(user.$id);
+        const schedules = await fetchStudySchedules(user.$id);
         setStudySchedules(schedules);
         if (schedules.length > 0) {
           setSelectedScheduleId(schedules[0].$id);
           // Weekly plans
           const weeklyPlanIds = Array.isArray(schedules[0].weekly_plan_id) ? schedules[0].weekly_plan_id : [];
-          const plans = await getWeeklyPlansByIds(weeklyPlanIds);
-          const mappedPlans: WeeklyPlan[] = plans.map((doc: any) => ({
-            study_schedule_id: doc.study_schedule_id,
-            week: doc.week,
-            focus: doc.focus,
-            topics: doc.topics,
-            objective: doc.objective
-          }));
+          const mappedPlans = await fetchWeeklyPlans(weeklyPlanIds);
           setWeeklyPlans(mappedPlans);
           // Daily sessions
           const dailySessionIds = Array.isArray(schedules[0].daily_session_id) ? schedules[0].daily_session_id : [schedules[0].daily_session_id];
-          const dailySessionsRes = await getDailySessionsByIds(dailySessionIds);
+          const dailySessionsRes = await fetchDailySessions(dailySessionIds);
           setDailySessions(dailySessionsRes);
           // Activities
-          let allActivityIds: string[] = [];
-          dailySessionsRes.forEach((ds: any) => {
-            if (Array.isArray(ds.activities_id)) {
-              allActivityIds = allActivityIds.concat(ds.activities_id);
-            }
-          });
-          const activitiesRes = await getActivitiesByIds(allActivityIds);
+          const activitiesRes = await fetchActivities(dailySessionsRes);
           setActivities(activitiesRes);
           // Milestones
           setLoadingMilestones(true);
-          const milestoneIds = schedules[0].milestones_id;
-          let ids = [];
-          if (Array.isArray(milestoneIds)) {
-            ids = milestoneIds;
-          } else if (typeof milestoneIds === 'string') {
-            ids = [milestoneIds];
-          }
-          if (ids.length > 0) {
-            const milestoneDocs = await getMilestonesByIds(ids);
-            const mappedMilestones = milestoneDocs.map((doc: any) => ({
-              id: typeof doc.id === 'number' ? doc.id : parseInt(doc.id),
-              description: doc.description,
-              target_completion: doc.target_completion,
-              study_schedule_id: doc.study_schedule_id,
-            }));
-            setMilestones(mappedMilestones);
-          } else {
-            setMilestones([]);
-          }
+          const mappedMilestones = await fetchMilestones(schedules[0].milestones_id);
+          setMilestones(mappedMilestones);
           setLoadingMilestones(false);
         } else {
           setWeeklyPlans([]);

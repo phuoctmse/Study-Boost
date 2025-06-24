@@ -11,7 +11,7 @@ export const sendSurveyToN8n = async (userId: string, responses: { questionId: s
         };
         console.log("Sending to n8n payload:", JSON.stringify(payload, null, 2));
 
-        const response = await fetch("https://n8n.minhphuoc.io.vn/webhook-test/survey/start", {
+        const response = await fetch("https://n8n.minhphuoc.io.vn/webhook/survey/start", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

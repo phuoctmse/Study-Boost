@@ -1,48 +1,69 @@
-import { getCurrentUser } from '@/api/auth';
-import { config } from '@/api/config';
-import { databases } from '@/api/index';
+import { getCurrentUser, getCurrentUserProfile, getUserDocumentById } from '@/api/auth';
+import { getPackages } from '@/api/package/package';
+import { createPayment, getPaymentById } from '@/api/payment/payment';
+import { PaymentStatus } from '@/types/payment';
+import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Query } from 'react-native-appwrite';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PaymentProcess() {
   const router = useRouter();
+  const navigation = useNavigation<any>();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [errorMessage, setErrorMessage] = useState('');
-  const qrCodeUrl = 'https://qr.sepay.vn/img?acc=27202407&bank=ACB&amount=150000';
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const startPayment = async () => {
+      try {
+        const user = await getCurrentUser();
+        const packagesRes = await getPackages();
+        const studentPackage = packagesRes.documents.find((pkg: any) => pkg.name.toLowerCase() === 'student');
+        if (!studentPackage) {
+          setErrorMessage('Không tìm thấy gói Sinh viên.');
+          setStatus('error');
+          return;
+        }
+        const payment = await createPayment({
+          package_id: studentPackage.$id,
+          user_id: user.$id,
+          started_at: new Date(),
+          ended_at: new Date(),
+          status: PaymentStatus.Pending,
+        });
+        setPaymentId(payment.$id);
+        setQrCodeUrl(`https://qr.sepay.vn/img?acc=27202407&bank=ACB&amount=150000&des=SB${payment.$id}`);
+        console.log(payment.$id);
+      } catch (err) {
+        setErrorMessage('Không thể khởi tạo thanh toán.');
+        setStatus('error');
+      }
+    };
+    startPayment();
+  }, []);
 
   const checkSubscriptionStatus = async () => {
     try {
-      const user = await getCurrentUser();
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      // Check user's subscription plan
-      const response = await databases.listDocuments(
-        config.databaseId,
-        config.collections.users,
-        [Query.equal('user_id', user.$id)]
-      );
-
-      if (response.documents.length > 0) {
-        const userDoc = response.documents[0];
-        if (userDoc.subscription_plan === 'student') {
-          setStatus('success');
-          setTimeout(() => {
-            router.replace('/profile');
-          }, 2000);
-        } else {
-          setStatus('error');
-          setErrorMessage('Payment not confirmed yet. Please try again after completing the payment.');
-        }
+      if (!paymentId) throw new Error('No paymentId');
+      const payment = await getPaymentById(paymentId);
+      if (payment && payment.status && payment.status.toLowerCase() === 'completed') {
+        setStatus('success');
+        setTimeout(async () => {
+          // Optionally, you can call a function to refresh user data here if you have a global user context or state
+          // For example: await refreshCurrentUser();
+          router.replace('/profile');
+        }, 2000);
+      } else {
+        setStatus('error');
+        setErrorMessage('Thanh toán chưa được xác nhận. Vui lòng thử lại sau khi hoàn tất thanh toán.');
       }
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error('Error checking payment status:', error);
       setStatus('error');
-      setErrorMessage('Failed to check payment status. Please try again.');
+      setErrorMessage('Không thể kiểm tra trạng thái thanh toán. Vui lòng thử lại.');
     }
   };
 
@@ -51,25 +72,26 @@ export default function PaymentProcess() {
       <View style={styles.content}>
         {status === 'processing' && (
           <>
-            <Text style={styles.title}>Scan QR Code to Pay</Text>
+            <Text style={styles.title}>Quét mã QR để thanh toán</Text>
             <Text style={styles.amount}>150,000 VND</Text>
-            <Image 
-              source={{ uri: qrCodeUrl }} 
-              style={styles.qrCode}
-              resizeMode="contain"
-            />
+            {qrCodeUrl && (
+              <Image 
+                source={{ uri: qrCodeUrl }} 
+                style={styles.qrCode}
+                resizeMode="contain"
+              />
+            )}
             <Text style={styles.instructions}>
-              Please scan this QR code with your banking app to complete the payment
+              Vui lòng quét mã QR này bằng ứng dụng ngân hàng để hoàn tất thanh toán
             </Text>
             <Text style={styles.bankInfo}>
-              Bank: ACB{'\n'}
-              Account: 27202407
+              {`Ngân hàng: ACB\nSố tài khoản: 27202407`}
             </Text>
             <TouchableOpacity 
               style={styles.checkButton}
               onPress={checkSubscriptionStatus}
             >
-              <Text style={styles.checkButtonText}>Check Payment Status</Text>
+              <Text style={styles.checkButtonText}>Kiểm tra trạng thái thanh toán</Text>
             </TouchableOpacity>
           </>
         )}
@@ -77,8 +99,26 @@ export default function PaymentProcess() {
         {status === 'success' && (
           <>
             <Text style={[styles.message, styles.successMessage]}>
-              Payment successful! Redirecting...
+              Payment successful!
             </Text>
+            <TouchableOpacity
+              style={styles.checkButton}
+              onPress={async () => {
+                // Fetch latest user data before navigating
+                try {
+                  const user = await getCurrentUserProfile();
+                  if (user?.$id) {
+                    await getUserDocumentById(user.$id);
+                  }
+                } catch (e) {}
+                navigation.reset({
+  index: 0,
+  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Pomodoro' }] } }],
+});
+              }}
+            >
+              <Text style={styles.checkButtonText}>Về trang cá nhân</Text>
+            </TouchableOpacity>
           </>
         )}
 

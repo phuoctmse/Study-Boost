@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { forgotPassword, login } from "../api/auth";
@@ -27,7 +27,7 @@ export default function Login() {
 
   async function handleLogin() {
     if (!email || !password) {
-      setError("Please fill in all fields");
+      setError("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
@@ -37,7 +37,7 @@ export default function Login() {
     try {
       // For Appwrite authentication, password must be at least 8 characters
       if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters long");
+        throw new Error("Mật khẩu phải có ít nhất 8 ký tự");
       }
 
       // Use the Appwrite login function from the API
@@ -57,7 +57,7 @@ export default function Login() {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      setError("Please enter your email address");
+      setError("Vui lòng nhập địa chỉ email của bạn");
       return;
     }
     
@@ -67,9 +67,9 @@ export default function Login() {
     
     try {
       await forgotPassword(email);
-      setForgotPasswordMessage("Password recovery email sent! Please check your inbox.");
+      setForgotPasswordMessage("Email khôi phục mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư của bạn.");
     } catch (err: any) {
-      setError(err.message || "Failed to send recovery email. Please try again.");
+      setError(err.message || "Gửi email khôi phục thất bại. Vui lòng thử lại.");
     } finally {
       setForgotPasswordLoading(false);
     }
@@ -98,7 +98,7 @@ export default function Login() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.welcomeText}>Welcome back!</Text>
+            <Text style={styles.welcomeText}>Chào mừng bạn quay lại!</Text>
           </View>
 
           {error && (
@@ -122,7 +122,7 @@ export default function Login() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder="Mật khẩu"
               placeholderTextColor="#99A"
               value={password}
               onChangeText={setPassword}
@@ -141,7 +141,7 @@ export default function Login() {
           </View>
           <View style={styles.troubleRow}>
             <Text style={styles.troubleText}>
-              Please enter your login credentials
+              Vui lòng nhập thông tin đăng nhập
             </Text>
           </View>
 
@@ -153,21 +153,21 @@ export default function Login() {
             {isLoading ? (
               <ActivityIndicator color="#353859" />
             ) : (
-              <Text style={styles.loginButtonText}>Sign in</Text>
+              <Text style={styles.loginButtonText}>Đăng nhập</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don`t have an account? </Text>
+            <Text style={styles.registerText}>Chưa có tài khoản? </Text>
             <TouchableOpacity onPress={() => router.push("/register")}>
-              <Text style={styles.registerLink}>Register Now</Text>
+              <Text style={styles.registerLink}>Đăng ký ngay</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Forgot password? </Text>
+            <Text style={styles.registerText}>Quên mật khẩu? </Text>
             <TouchableOpacity onPress={handleForgotPassword} disabled={forgotPasswordLoading}>
               <Text style={styles.registerLink}>
-                {forgotPasswordLoading ? "Sending..." : "Click here"}
+                {forgotPasswordLoading ? "Đang gửi..." : "Nhấn vào đây"}
               </Text>
             </TouchableOpacity>
           </View>

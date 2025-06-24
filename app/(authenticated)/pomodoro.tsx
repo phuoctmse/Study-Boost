@@ -1,14 +1,11 @@
 import { getCurrentUser } from '@/api/auth';
 import { getActivitiesByIds, getDailySessionsByIds, getStudySchedulesByUserId } from '@/api/study-schedule/study_schedule';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-const FOCUS_MIN = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
-const BREAK_MIN = [3, 5, 10, 15, 20];
-const LONG_BREAK_MIN = [10, 15, 20, 25, 30];
 const SOUNDS = [
   { name: 'Standard', icon: 'bell' },
   { name: 'Chirping', icon: 'twitter' },
@@ -21,14 +18,49 @@ const MUSIC_INFO = [
     artist: 'Red Velvet',
     file: require('../../assets/music/music-1.mp3'),
     cover: require('../../assets/images/background-1.jpg'),
-    duration: 373,
+    duration: 57,
   },
   {
-    title: 'Song 2',
-    artist: 'Red Velvet',
+    title: 'Morning Garden - Acoustic Chill',
+    artist: 'folk_acoustic',
     file: require('../../assets/music/music-2.mp3'),
     cover: require('../../assets/images/background-2.jpg'),
-    duration: 373,
+    duration: 147,
+  },
+  {
+    title: 'Good Night - Lofi Cozy Chill Music',
+    artist: 'FASSounds',
+    file: require('../../assets/music/music-3.mp3'),
+    cover: require('../../assets/images/background-3.jpg'),
+    duration: 233,
+  },
+  {
+    title: 'Better Day',
+    artist: 'penguinmusic',
+    file: require('../../assets/music/music-4.mp3'),
+    cover: require('../../assets/images/background-4.jpg'),
+    duration: 195,
+  },
+  {
+    title: 'Easy Lifestyle',
+    artist: 'music_for_video',
+    file: require('../../assets/music/music-5.mp3'),
+    cover: require('../../assets/images/background-5.jpg'),
+    duration: 300,
+  },
+  {
+    title: 'Coffee Chill Out',
+    artist: 'RomanBelov',
+    file: require('../../assets/music/music-6.mp3'),
+    cover: require('../../assets/images/background-6.jpg'),
+    duration: 113,
+  },
+  {
+    title: 'Tasty - Chill Lofi Vibe',
+    artist: 'FASSounds',
+    file: require('../../assets/music/music-7.mp3'),
+    cover: require('../../assets/images/background-7.jpg'),
+    duration: 133,
   },
 ];
 const TIMER_STATES = {
@@ -36,19 +68,21 @@ const TIMER_STATES = {
   BREAK: 'BREAK',
   LONG_BREAK: 'LONG_BREAK',
 };
-const CIRCLE_LENGTH = 260;
-const RADIUS = 42;
 const BACKGROUND_IMAGES = [
   require('../../assets/images/background-1.jpg'),
   require('../../assets/images/background-2.jpg'),
   require('../../assets/images/background-3.jpg'),
+  require('../../assets/images/background-4.jpg'),
+  require('../../assets/images/background-5.jpg'),
+  require('../../assets/images/background-6.jpg'),
+  require('../../assets/images/background-7.jpg'),
 ];
 const MOTIVATIONAL_QUOTES = [
-  'Stay focused and never give up!',
-  'Small steps every day!',
-  'You are capable of amazing things.',
-  'Progress, not perfection.',
-  'Keep going, you are getting there!',
+  'Giữ vững tập trung và đừng bao giờ bỏ cuộc!',
+  'Từng bước nhỏ mỗi ngày!',
+  'Bạn có thể làm được những điều tuyệt vời.',
+  'Tiến bộ, không cần hoàn hảo.',
+  'Tiếp tục cố gắng, bạn sẽ đạt được mục tiêu!',
 ];
 
 export default function Pomodoro() {
@@ -65,28 +99,20 @@ export default function Pomodoro() {
   const [isRunning, setIsRunning] = useState(false);
   const [round, setRound] = useState(1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [showBgModal, setShowBgModal] = useState(false);
   const [showMusicModal, setShowMusicModal] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
   const [musicIndex, setMusicIndex] = useState(0);
   const [quote, setQuote] = useState(MOTIVATIONAL_QUOTES[0]);
-  const [completed, setCompleted] = useState(0); // Pomodoros completed today
 
   // Music player state
   const [musicPosition, setMusicPosition] = useState(0);
   const [musicDuration, setMusicDuration] = useState(0);
 
-  // Info: subject and study time left
-  const [subject] = useState('Math');
-  const [goalMinutes] = useState(60); // daily goal
-  const [studyLeft, setStudyLeft] = useState(goalMinutes * 60); // in seconds
-
   // Today's activities
   const [todayActivities, setTodayActivities] = useState<any[]>([]);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
   const [activityLoading, setActivityLoading] = useState(true);
-  const [activityExpanded, setActivityExpanded] = useState(false);
   const [showAllActivitiesModal, setShowAllActivitiesModal] = useState(false);
 
   // Update timer when settings change
@@ -108,15 +134,12 @@ export default function Pomodoro() {
           }
           return prev - 1;
         });
-        if (timerState === TIMER_STATES.FOCUS) {
-          setStudyLeft((prev) => (prev > 0 ? prev - 1 : 0));
-        }
       }, 1000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, timerState]);
+  }, [isRunning]);
 
   // Play music when timer starts
   useEffect(() => {
@@ -337,7 +360,7 @@ export default function Pomodoro() {
           style={[styles.soundOption, selectedSoundName === s.name && styles.soundOptionActive]}
           onPress={() => setSelectedSoundName(s.name)}
         >
-          <Feather name={s.icon as any} size={22} color={selectedSoundName === s.name ? '#737AA8' : '#AAA'} />
+          <Ionicons name={s.icon as any} size={22} color={selectedSoundName === s.name ? '#737AA8' : '#AAA'} />
           <Text style={[styles.soundText, selectedSoundName === s.name && { color: '#737AA8' }]}>{s.name}</Text>
         </TouchableOpacity>
       ))}
@@ -518,7 +541,6 @@ export default function Pomodoro() {
           </Svg>
           <View style={styles.timerTextWrapperMinimal}>
             <Text style={styles.timerTextMinimal}>{formatTime(secondsLeft)}</Text>
-            <Text style={styles.roundTextMinimal}>Round {round}</Text>
           </View>
         </View>
         <TouchableOpacity

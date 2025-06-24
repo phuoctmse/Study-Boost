@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { register as appwriteRegister } from "../api/auth";
@@ -27,17 +27,17 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   async function handleRegister() {
     if (!username || !email || !password || !confirmPassword) {
-      setError("Please fill in all fields");
+      setError("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Mật khẩu không khớp");
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      setError("Mật khẩu phải có ít nhất 8 ký tự");
       return;
     }
 
@@ -57,7 +57,7 @@ export default function Register() {
       });
     } catch (err: any) {
       console.error("Registration error:", err);
-      setError(err.message || "Registration failed. Please try again.");
+      setError(err.message || "Đăng ký thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +90,7 @@ export default function Register() {
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <Text style={styles.welcomeText}>Create Account</Text>
+              <Text style={styles.welcomeText}>Tạo tài khoản</Text>
             </View>
 
             {error && (
@@ -106,7 +106,7 @@ export default function Register() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Username"
+                placeholder="Tên người dùng"
                 placeholderTextColor="#99A"
                 value={username}
                 onChangeText={setUsername}
@@ -130,7 +130,7 @@ export default function Register() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 placeholderTextColor="#99A"
                 value={password}
                 onChangeText={setPassword}
@@ -151,7 +151,7 @@ export default function Register() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Confirm Password"
+                placeholder="Xác nhận mật khẩu"
                 placeholderTextColor="#99A"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -167,20 +167,19 @@ export default function Register() {
               {isLoading ? (
                 <ActivityIndicator color="#353859" />
               ) : (
-                <Text style={styles.registerButtonText}>Create Account</Text>
+                <Text style={styles.registerButtonText}>Tạo tài khoản</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
+              <Text style={styles.loginText}>Đã có tài khoản? </Text>
               <TouchableOpacity onPress={() => router.push("/login")}>
-                <Text style={styles.loginLink}>Login</Text>
+                <Text style={styles.loginLink}>Đăng nhập</Text>
               </TouchableOpacity>
             </View>
 
             <Text style={styles.termsText}>
-              By creating an account, you agree to our Terms of Service and
-              Privacy Policy.
+              Bằng việc tạo tài khoản, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của chúng tôi.
             </Text>
           </View>
         </ScrollView>

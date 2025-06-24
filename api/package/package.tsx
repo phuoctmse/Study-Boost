@@ -6,6 +6,7 @@ export const getPackages = async () => {
       config.databaseId,
       config.collections.package
     );
+    return response;
   } catch (error: any) {
     console.error("Error fetching packages:", error);
     throw new Error(`Failed to fetch packages: ${error.message}`);
