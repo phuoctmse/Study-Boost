@@ -24,7 +24,10 @@ export const getPaymentById = async (paymentId: string) => {
       paymentId
     );
     return response;
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error fetching payment by ID:", error);
+    throw new Error(`Failed to fetch payment: ${error}`);
+  }
 };
 
 export const getPaymentsByUserId = async (userId: string) => {
