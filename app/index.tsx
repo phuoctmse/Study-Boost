@@ -1,28 +1,56 @@
 import { getSurveyQuestions } from "@/api/survey/survey";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Models } from "react-native-appwrite";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getCurrentUser, logout } from "../api/auth";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+const slides = [
+  {
+    id: '1',
+    image: require('../assets/images/QLTG.jpg'),
+    title: 'Quản lý thời gian',
+    description: 'Tối ưu hoá việc học tập với kỹ thuật Pomodoro'
+  },
+  {
+    id: '2',
+    image: require('../assets/images/DTTT.jpg'),
+    title: 'Duy trì tập trung',
+    description: 'Tránh phân tâm và tạo thói quen học tập hiệu quả'
+  },
+  {
+    id: '3',
+    image: require('../assets/images/KNCDHT.jpg'),
+    title: 'Kết nối',
+    description: 'Học tập cùng cộng đồng và chia sẻ thành tích'
+  },
+];
 
 export default function Index() {
   const [loggedInUser, setLoggedInUser] =
     useState<Models.User<Models.Preferences> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const slidesRef = useRef<FlatList>(null);
+
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
@@ -50,15 +78,23 @@ export default function Index() {
       console.error("Logout failed", error);
     }
   };
+
+  const viewableItemsChanged = useRef(({ viewableItems }: any) => {
+    setCurrentIndex(viewableItems[0]?.index || 0);
+  }).current;
+
+  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
+        <ActivityIndicator color="#737AA8" size="large" />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#737AA8" }]}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#737AA8" />
       {loggedInUser ? (
         // If user is logged in, redirect to pomodoro page
@@ -75,127 +111,126 @@ export default function Index() {
           );
         })()
       ) : (
-        // User is not logged in - show homepage inspired by the web version
-        <>
-          <View style={styles.homeHeader}>
-            <View style={styles.titleContainer}>
-              <Image
-                source={require("../assets/images/icon.png")}
-                style={styles.headerIcon}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={styles.headerButtons}>
-              <TouchableOpacity
-                style={styles.headerLoginButton}
-                onPress={() => router.push("/login")}
-              >
-                <Text style={styles.headerLoginText}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.headerSignupButton}
+        // User is not logged in - show redesigned app landing page
+        <View style={styles.contentContainer}>
+          {/* App Header */}
+          <View style={styles.appHeader}>
+            <Image
+              source={require("../assets/images/icon.png")}
+              style={styles.headerIcon}
+              resizeMode="contain"
+            />
+          </View>
+          
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            {/* Hero Section with Background */}
+            <ImageBackground
+              source={require("../assets/images/icon.png")}
+              style={styles.heroBackground}
+              imageStyle={{ opacity: 0.1 }}
+            >
+              <View style={styles.heroContent}>
+                <Text style={styles.heroTitle}>
+                  Nâng cao hiệu quả học tập với AI & Gamification!
+                </Text>
+                <Text style={styles.heroSubtitle}>
+                  Quản lý thời gian và duy trì tập trung hiệu quả
+                </Text>
+              </View>
+            </ImageBackground>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity 
+                style={styles.primaryActionButton}
                 onPress={() => router.push("/register")}
               >
-                <Text style={styles.headerSignupText}>Sign Up</Text>
+                <Text style={styles.primaryActionText}>Đăng ký ngay</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.secondaryActionButton}
+                onPress={() => router.push("/login")}
+              >
+                <Text style={styles.secondaryActionText}>Đã có tài khoản? Đăng nhập</Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={{ backgroundColor: "#f4f6f8" }}
-          >
-            {/* Hero Section */}
-            <View style={styles.heroSection}>
-              <View style={styles.heroContent}>
-                <View style={styles.heroTextContainer}>
-                  <Text style={styles.heroTitle}>
-                    Nâng cao hiệu quả{"\n"}
-                    học tập với{"\n"}
-                    AI &{"\n"}
-                    Gamification!
-                  </Text>
-                  <View style={styles.ctaButtons}>
-                    <TouchableOpacity style={styles.trialButton}>
-                      <Text style={styles.trialButtonText}>
-                        Dùng thử miễn phí
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.registerButton}
-                      onPress={() => router.push("/register")}
-                    >
-                      <Text style={styles.registerButtonText}>
-                        Đăng ký ngay
-                      </Text>
-                    </TouchableOpacity>
+            {/* Info Slide View with Dot Indicators */}
+            <View style={styles.slideViewContainer}>
+              <FlatList
+                data={slides}
+                renderItem={({ item }) => (
+                  <View style={styles.slideItem}>
+                    <Image
+                      source={item.image}
+                      style={styles.slideImage}
+                      resizeMode="cover"
+                    />
+                    <Text style={styles.slideTitle}>{item.title}</Text>
+                    <Text style={styles.slideDescription}>{item.description}</Text>
                   </View>
-                </View>
+                )}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                keyExtractor={(item) => item.id}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                  { useNativeDriver: false }
+                )}
+                onViewableItemsChanged={viewableItemsChanged}
+                viewabilityConfig={viewConfig}
+                ref={slidesRef}
+              />
+              
+              {/* Dot Indicators */}
+              <View style={styles.dotIndicatorsContainer}>
+                {slides.map((_, index) => {
+                  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+                  
+                  const dotWidth = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [8, 16, 8],
+                    extrapolate: 'clamp'
+                  });
+                  
+                  const opacity = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [0.3, 1, 0.3],
+                    extrapolate: 'clamp'
+                  });
+                  
+                  return (
+                    <Animated.View
+                      key={index.toString()}
+                      style={[
+                        styles.dot,
+                        {
+                          width: dotWidth,
+                          opacity: opacity,
+                          backgroundColor: index === currentIndex ? '#3a3b5c' : '#d4d4d4'
+                        }
+                      ]}
+                    />
+                  );
+                })}
               </View>
             </View>
-            {/* Features Section */}
-            <View style={styles.featuresSection}>
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name="time-outline" size={40} color="#353859" />
-                </View>
-                <Text style={styles.featureTitle}>Quản lý thời gian</Text>
-              </View>
 
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name="eye-outline" size={40} color="#353859" />
-                </View>
-                <Text style={styles.featureTitle}>Duy trì tập trung</Text>
-              </View>
-
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name="people-outline" size={40} color="#353859" />
-                </View>
-                <Text style={styles.featureTitle}>Kết nối</Text>
-              </View>
-            </View>
-
-            {/* Laptop/App Preview Section */}
-            <View style={styles.laptopSection}>
-              <View style={styles.laptopContainer}>
-                <View style={styles.laptopScreen}>
-                  <Image
-                    source={require("../assets/images/icon.png")}
-                    style={[
-                      styles.appPreviewImage,
-                      { width: "70%", height: "70%" },
-                    ]}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.bottomCta}>
-                <Text style={styles.bottomCtaText}>
-                  Dùng thử miễn phí / Đăng ký ngay
-                </Text>
-                <View style={styles.bottomCtaButtons}>
-                  <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={() => router.push("/login")}
-                  >
-                    <Text style={styles.loginButtonText}>Đăng nhập</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.registerButton, styles.bottomRegisterButton]}
-                    onPress={() => router.push("/register")}
-                  >
-                    <Text style={styles.registerButtonText}>Đăng ký</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Image
+                source={require("../assets/images/icon.png")}
+                style={styles.footerLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.footerText}>© 2023 Study Boost</Text>
             </View>
           </ScrollView>
-        </>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -206,43 +241,196 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f4f6f8",
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#353859",
+    fontSize: 16,
   },
   container: {
     flex: 1,
-    // Removing backgroundColor here as we set it directly in the SafeAreaView
+    backgroundColor: "#f4f6f8",
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+  contentContainer: {
+    flex: 1,
   },
-  homeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+  scrollView: {
+    flex: 1,
+  },
+  appHeader: {
     backgroundColor: "#737AA8",
-  },
-  titleContainer: {
-    flexDirection: "row",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: "center",
+    elevation: 4,
   },
   headerIcon: {
     width: 150,
-    height: 50,
-    marginRight: 10,
+    height: 40,
   },
-  headerTitle: {
-    fontSize: 20,
+  
+  // Hero Section
+  heroBackground: {
+    backgroundColor: "#737AA8",
+    padding: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    overflow: "hidden",
+  },
+  heroContent: {
+    alignItems: "center",
+    paddingVertical: 30,
+  },
+  heroTitle: {
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#353859",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 16,
   },
+  heroSubtitle: {
+    fontSize: 16,
+    color: "#fff",
+    textAlign: "center",
+    opacity: 0.9,
+  },
+  
+  // Action Buttons
+  actionButtonsContainer: {
+    padding: 20,
+    marginTop: -20,
+  },
+  primaryActionButton: {
+    backgroundColor: "#3a3b5c",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+  },
+  primaryActionText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+    marginRight: 8,
+  },
+  secondaryActionButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  secondaryActionText: {
+    color: "#353859",
+    fontSize: 16,
+  },
+  
+  // Info Slide View
+  slideViewContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  slideItem: {
+    width: width,
+    alignItems: 'center',
+    padding: 20,
+  },
+  slideImage: {
+    width: width * 0.8,
+    height: width * 0.6,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  slideTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#353859',
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  slideDescription: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  dotIndicatorsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  dot: {
+    height: 8,
+    width: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  
+  // Final CTA Section
+  finalCtaContainer: {
+    backgroundColor: '#737AA8',
+    borderRadius: 20,
+    padding: 30,
+    marginHorizontal: 20,
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  finalCtaTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 25,
+    lineHeight: 30,
+  },
+  ctaRegisterButton: {
+    backgroundColor: "#fcc89b",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 200,
+    alignItems: "center",
+    elevation: 3,
+  },
+  ctaRegisterText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  ctaLoginButton: {
+    backgroundColor: "#3a3b5c",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 200,
+    alignItems: "center",
+    elevation: 3,
+  },
+  ctaLoginText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  
+  // Footer
+  footer: {
+    padding: 20,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  footerLogo: {
+    width: 100,
+    height: 30,
+    marginBottom: 10,
+  },
+  footerText: {
+    color: "#666",
+    fontSize: 14,
+  },
+  
+  // Keep existing styles that might be used elsewhere
   headerButtons: {
     flexDirection: "row",
   },
@@ -267,209 +455,6 @@ const styles = StyleSheet.create({
   headerSignupText: {
     color: "#fff",
     fontWeight: "500",
-  },
-  contentContainer: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  // Hero Section
-  heroSection: {
-    backgroundColor: "#737AA8",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 100,
-    marginTop: 0, // Ensure no gap between header and hero section
-  },
-  heroContent: {
-    flexDirection: "column", // Column layout for mobile
-    alignItems: "center",
-  },
-  heroTextContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  heroTitle: {
-    fontSize: 38, // Increased from 32
-    fontWeight: "bold",
-    color: "#353859",
-    textAlign: "center",
-    marginBottom: 30,
-    lineHeight: 46, // Increased from 40
-  },
-  ctaButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    flexWrap: "wrap",
-  },
-  trialButton: {
-    backgroundColor: "#fcc89b",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
-    minWidth: 150,
-  },
-  trialButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  registerButton: {
-    backgroundColor: "#3a3b5c",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginBottom: 10,
-    minWidth: 150,
-  },
-  registerButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  heroImageContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  heroImage: {
-    width: 250, // Increased from 200
-    height: 250, // Increased from 200
-  },
-
-  // Features Section
-  featuresSection: {
-    flexDirection: "row", // Changed from 'column' to 'row'
-    flexWrap: "wrap", // Added to wrap items if needed
-    justifyContent: "space-between", // Added to distribute items evenly
-    padding: 30,
-    backgroundColor: "#fff",
-  },
-  featureCard: {
-    alignItems: "center",
-    marginBottom: 30,
-    width: "30%", // Added to make cards take up approximately 1/3 of the width
-  },
-  featureIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#353859",
-    textAlign: "center",
-  },
-
-  // Laptop Section
-  laptopSection: {
-    backgroundColor: "#7c7db8",
-    padding: 30,
-    alignItems: "center",
-  },
-  laptopContainer: {
-    width: "90%",
-    maxWidth: 350,
-    backgroundColor: "#222",
-    borderRadius: 20,
-    padding: 15,
-    paddingBottom: 0,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  laptopScreen: {
-    backgroundColor: "#e0e0e0",
-    borderRadius: 5,
-    aspectRatio: 16 / 10,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appPreviewImage: {
-    width: "50%",
-    height: "50%",
-  },
-  bottomCta: {
-    width: "100%",
-    alignItems: "center",
-    marginTop: 20,
-  },
-  bottomCtaText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  bottomCtaButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    flexWrap: "wrap",
-  },
-  loginButton: {
-    backgroundColor: "#fcc89b",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 20,
-    marginRight: 15,
-    marginBottom: 10,
-  },
-  loginButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  bottomRegisterButton: {
-    marginRight: 0,
-  },
-
-  // Logged in user styles
-  dashboardContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  welcomeCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  welcomeText: {
-    fontSize: 18,
-    marginLeft: 15,
-    color: "#333",
-  },
-  userName: {
-    fontWeight: "bold",
-    color: "#353859",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 15,
-    color: "#333",
   },
   quickActions: {
     flexDirection: "row",
@@ -514,3 +499,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
+
+

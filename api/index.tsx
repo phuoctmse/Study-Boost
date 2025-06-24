@@ -23,6 +23,7 @@ const config = {
     payment: process.env.EXPO_PUBLIC_APPWRITE_COL_PAYMENT_ID as string,
     leaderBoard: process.env.EXPO_PUBLIC_APPWRITE_COL_LEADERBOARD_ID as string,
     package: process.env.EXPO_PUBLIC_APPWRITE_COL_PACKAGE_ID as string,
+    feedback: process.env.EXPO_PUBLIC_APPWRITE_COL_FEEDBACK_ID as string
   },
 };
 

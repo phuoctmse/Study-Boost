@@ -155,7 +155,7 @@ export default function Survey() {
 
   if (isSaving) {
     return (
-      <LoadingSurvey loading={true} message="Đang chờ AI tạo lịch học cá nhân cho bạn..." />
+      <LoadingSurvey loading={true} message="Đang chờ AI tạo lịch học cá nhân cho bạn" />
     );
   }
 
