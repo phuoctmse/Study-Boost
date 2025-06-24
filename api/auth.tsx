@@ -72,3 +72,16 @@ export const getCurrentUserProfile = async () => {
     throw new Error(`Failed to get current user profile: ${error.message}`);
   }
 };
+
+export const getUserDocumentById = async (userId: string) => {
+  try {
+    const userDoc = await databases.getDocument(
+      config.databaseId,
+      config.collections.users,
+      userId
+    );
+    return userDoc;
+  } catch (error: any) {
+    throw new Error(`Failed to get user document: ${error.message}`);
+  }
+};

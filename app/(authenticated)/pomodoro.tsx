@@ -1,7 +1,9 @@
+import { getCurrentUser } from '@/api/auth';
+import { getActivitiesByIds, getDailySessionsByIds, getStudySchedulesByUserId } from '@/api/study-schedule/study_schedule';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 const FOCUS_MIN = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
@@ -79,6 +81,13 @@ export default function Pomodoro() {
   const [subject] = useState('Math');
   const [goalMinutes] = useState(60); // daily goal
   const [studyLeft, setStudyLeft] = useState(goalMinutes * 60); // in seconds
+
+  // Today's activities
+  const [todayActivities, setTodayActivities] = useState<any[]>([]);
+  const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityExpanded, setActivityExpanded] = useState(false);
+  const [showAllActivitiesModal, setShowAllActivitiesModal] = useState(false);
 
   // Update timer when settings change
   useEffect(() => {
@@ -168,26 +177,59 @@ export default function Pomodoro() {
     setQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
   }, [isRunning]);
 
-  const handleTimerEnd = () => {
-    if (timerState === TIMER_STATES.FOCUS) {
-      setCompleted((c) => c + 1);
-      setTimerState(TIMER_STATES.BREAK);
-      setSecondsLeft(breakTime * 60);
-    } else if (timerState === TIMER_STATES.BREAK) {
-      if (round % 4 === 0) {
-        setTimerState(TIMER_STATES.LONG_BREAK);
-        setSecondsLeft(longBreak * 60);
-      } else {
-        setTimerState(TIMER_STATES.FOCUS);
-        setSecondsLeft(focus * 60);
-        setRound((r) => r + 1);
+  // Fetch today's activities on mount
+  useEffect(() => {
+    const fetchTodayActivities = async () => {
+      setActivityLoading(true);
+      try {
+        const user = await getCurrentUser();
+        const schedules = await getStudySchedulesByUserId(user.$id);
+        if (schedules.length > 0) {
+          const dailySessionIds = Array.isArray(schedules[0].daily_session_id) ? schedules[0].daily_session_id : [schedules[0].daily_session_id];
+          const dailySessions = await getDailySessionsByIds(dailySessionIds);
+          // Get today's day name (e.g., 'Monday')
+          const today = new Date();
+          const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const todayName = daysOfWeek[today.getDay()];
+          // Find sessions for today
+          const sessionsToday = dailySessions.filter((ds: any) => (ds.study_days || []).includes(todayName));
+          let allActivityIds: string[] = [];
+          sessionsToday.forEach((ds: any) => {
+            if (Array.isArray(ds.activities_id)) {
+              allActivityIds = allActivityIds.concat(ds.activities_id);
+            }
+          });
+          const activities = await getActivitiesByIds(allActivityIds);
+          setTodayActivities(activities);
+          setCurrentActivityIndex(0);
+        } else {
+          setTodayActivities([]);
+        }
+      } catch (err) {
+        setTodayActivities([]);
+      } finally {
+        setActivityLoading(false);
       }
-    } else if (timerState === TIMER_STATES.LONG_BREAK) {
-      setTimerState(TIMER_STATES.FOCUS);
-      setSecondsLeft(focus * 60);
-      setRound((r) => r + 1);
+    };
+    fetchTodayActivities();
+  }, []);
+
+  // When currentActivityIndex changes, update timer duration
+  useEffect(() => {
+    if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length) {
+      setSecondsLeft(todayActivities[currentActivityIndex].duration_minutes * 60);
     }
-    setIsRunning(false);
+  }, [currentActivityIndex, todayActivities]);
+
+  // After timer ends, move to next activity if available
+  const handleTimerEnd = () => {
+    if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length - 1) {
+      setCurrentActivityIndex((idx) => idx + 1);
+      setIsRunning(false);
+    } else {
+      // fallback to old logic if no more activities
+      setIsRunning(false);
+    }
   };
 
   const formatTime = (s: number) => {
@@ -213,22 +255,58 @@ export default function Pomodoro() {
 
   // Progress for circular timer
   const getProgress = () => {
-    let total = focus * 60;
-    if (timerState === TIMER_STATES.BREAK) total = breakTime * 60;
-    if (timerState === TIMER_STATES.LONG_BREAK) total = longBreak * 60;
+    let total;
+    if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length) {
+      // Use current activity's duration
+      total = todayActivities[currentActivityIndex].duration_minutes * 60;
+    } else {
+      // Fallback to focus time if no activities
+      total = focus * 60;
+    }
     return 1 - secondsLeft / total;
   };
 
-  // Info component
+  // Info: subject and study time left, plus today's activities
   const Info = () => (
     <View style={styles.infoCard}>
-      <Text style={styles.infoSubject}>{subject}</Text>
-      <Text style={styles.infoMainText}>{Math.ceil(studyLeft / 60)} minutes left for today</Text>
-      <Text style={styles.infoSubText}>({new Date().toLocaleDateString('en-US')})</Text>
-      <View style={styles.progressBarBg}>
-        <View style={[styles.progressBarFill, { width: `${Math.min(((goalMinutes * 60 - studyLeft) / (goalMinutes * 60)) * 100, 100)}%` }]} />
+      {/* Today's activities */}
+      <View style={{ marginTop: 18, width: '100%' }}>
+        <Text style={{ fontWeight: 'bold', color: '#737AA8', fontSize: 16, marginBottom: 8 }}>Hoạt động hôm nay</Text>
+        {activityLoading ? (
+          <Text style={{ color: '#737AA8' }}>Đang tải hoạt động...</Text>
+        ) : todayActivities.length === 0 ? (
+          <Text style={{ color: '#737AA8' }}>Không có hoạt động nào cho hôm nay.</Text>
+        ) : (
+          <>
+            <View key={todayActivities[currentActivityIndex].$id} style={{ backgroundColor: '#FCC89B', borderRadius: 12, padding: 12, marginBottom: 8 }}>
+              <Text style={{ fontWeight: 'bold', color: '#353859', fontSize: 15 }}>{todayActivities[currentActivityIndex].name}</Text>
+              <Text style={{ color: '#353859', fontSize: 14, marginTop: 2 }}>{todayActivities[currentActivityIndex].description}</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+                {(todayActivities[currentActivityIndex].techniques || []).map((tech: string, i: number) => (
+                  <View key={i} style={{ backgroundColor: '#E6E7F4', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, marginRight: 6, marginBottom: 4 }}>
+                    <Text style={{ color: '#737AA8', fontSize: 13 }}>{tech}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={{ color: '#737AA8', fontSize: 13, marginTop: 4 }}>Thời lượng: {todayActivities[currentActivityIndex].duration_minutes} phút</Text>
+            </View>
+            <TouchableOpacity
+              style={{ alignItems: 'center', marginTop: 6 }}
+              activeOpacity={0.8}
+              onPress={() => setShowAllActivitiesModal(true)}
+            >
+              <Ionicons
+                name={'chevron-down'}
+                size={22}
+                color="#737AA8"
+              />
+              <Text style={{ color: '#737AA8', fontSize: 13, marginTop: 2 }}>
+                Xem tất cả hoạt động
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
-      <Text style={styles.infoSubText}>Completed: {Math.floor((goalMinutes * 60 - studyLeft) / 60)}/{goalMinutes} min</Text>
     </View>
   );
 
@@ -259,8 +337,8 @@ export default function Pomodoro() {
           style={[styles.soundOption, selectedSoundName === s.name && styles.soundOptionActive]}
           onPress={() => setSelectedSoundName(s.name)}
         >
-          <Feather name={s.icon as any} size={22} color={selectedSoundName === s.name ? '#FF7B86' : '#AAA'} />
-          <Text style={[styles.soundText, selectedSoundName === s.name && { color: '#FF7B86' }]}>{s.name}</Text>
+          <Feather name={s.icon as any} size={22} color={selectedSoundName === s.name ? '#737AA8' : '#AAA'} />
+          <Text style={[styles.soundText, selectedSoundName === s.name && { color: '#737AA8' }]}>{s.name}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -270,26 +348,43 @@ export default function Pomodoro() {
   const renderBgModal = () => (
     <Modal visible={showBgModal} animationType="slide" transparent>
       <View style={styles.modalBg}>
-        <View style={styles.settingsCard}>
-          <View style={styles.settingsHeader}>
+        <View style={{ backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: 370, alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18, width: '100%', justifyContent: 'space-between' }}>
             <TouchableOpacity onPress={() => setShowBgModal(false)}>
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
-            <Text style={styles.settingsTitle}>Select Background</Text>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>Chọn hình nền</Text>
             <View style={{ width: 24 }} />
           </View>
-          {BACKGROUND_IMAGES.map((img, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.backgroundOption, bgIndex === index && styles.backgroundOptionActive]}
-              onPress={() => {
-                setBgIndex(index);
-                setShowBgModal(false);
-              }}
-            >
-              <Text style={[styles.backgroundText, bgIndex === index && styles.backgroundTextActive]}>Background {index + 1}</Text>
-            </TouchableOpacity>
-          ))}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 10 }}>
+            {BACKGROUND_IMAGES.map((img, index) => (
+              <TouchableOpacity
+                key={index}
+                style={{
+                  marginHorizontal: 10,
+                  borderRadius: 32,
+                  borderWidth: bgIndex === index ? 4 : 0,
+                  borderColor: bgIndex === index ? '#737AA8' : 'transparent',
+                  overflow: 'hidden',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 10,
+                  elevation: 4,
+                }}
+                onPress={() => {
+                  setBgIndex(index);
+                  setShowBgModal(false);
+                }}
+                activeOpacity={0.85}
+              >
+                <Image
+                  source={img}
+                  style={{ width: 160, height: 340, resizeMode: 'cover' }}
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -346,11 +441,50 @@ export default function Pomodoro() {
     </Modal>
   );
 
+  // Modal to show all activities
+  const renderAllActivitiesModal = () => (
+    <Modal
+      visible={showAllActivitiesModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowAllActivitiesModal(false)}
+    >
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 20, width: '100%', maxWidth: 400, maxHeight: '80%' }}>
+          <Text style={{ color: '#737AA8', fontWeight: 'bold', fontSize: 18, marginBottom: 16, textAlign: 'center' }}>Tất cả hoạt động hôm nay</Text>
+          <ScrollView style={{ maxHeight: 350 }}>
+            {todayActivities.map((act, idx) => (
+              <View key={act.$id} style={{ backgroundColor: idx === currentActivityIndex ? '#FCC89B' : '#F8F8FC', borderRadius: 12, padding: 12, marginBottom: 10 }}>
+                <Text style={{ fontWeight: 'bold', color: '#353859', fontSize: 15 }}>{act.name}</Text>
+                <Text style={{ color: '#353859', fontSize: 14, marginTop: 2 }}>{act.description}</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+                  {(act.techniques || []).map((tech: string, i: number) => (
+                    <View key={i} style={{ backgroundColor: '#E6E7F4', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, marginRight: 6, marginBottom: 4 }}>
+                      <Text style={{ color: '#737AA8', fontSize: 13 }}>{tech}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={{ color: '#737AA8', fontSize: 13, marginTop: 4 }}>Thời lượng: {act.duration_minutes} phút</Text>
+              </View>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            style={{ backgroundColor: '#FCC89B', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 }}
+            onPress={() => setShowAllActivitiesModal(false)}
+          >
+            <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 16 }}>Đóng</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Main render
   return (
     <ImageBackground source={BACKGROUND_IMAGES[bgIndex]} style={styles.bg} resizeMode="cover">
       {renderBgModal()}
       {renderMusicModal()}
+      {renderAllActivitiesModal()}
       <View style={styles.timerScreen}>
         <View style={styles.timerHeaderMinimal}>
           <TouchableOpacity onPress={() => setShowBgModal(true)}>
@@ -374,7 +508,7 @@ export default function Pomodoro() {
               cx={110}
               cy={110}
               r={95}
-              stroke="#FF7B86"
+              stroke="#737AA8"
               strokeWidth={16}
               fill="none"
               strokeDasharray={2 * Math.PI * 95}
@@ -437,7 +571,7 @@ const styles = StyleSheet.create({
   timerTextMinimal: {
     fontSize: 44,
     fontWeight: 'bold',
-    color: '#FF7B86',
+    color: '#737AA8',
     letterSpacing: 1,
   },
   roundTextMinimal: {
@@ -447,14 +581,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   playButtonMinimal: {
-    backgroundColor: '#FF7B86',
+    backgroundColor: '#737AA8',
     width: 64,
     height: 64,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,
-    shadowColor: '#FF7B86',
+    shadowColor: '#737AA8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
     shadowRadius: 12,
@@ -525,7 +659,7 @@ const styles = StyleSheet.create({
     margin: 4,
   },
   pickerOptionActive: {
-    backgroundColor: '#FF7B86',
+    backgroundColor: '#737AA8',
   },
   pickerOptionText: {
     color: '#AAA',
@@ -551,7 +685,7 @@ const styles = StyleSheet.create({
     flexBasis: '22%',
   },
   soundOptionActive: {
-    backgroundColor: '#FF7B86',
+    backgroundColor: '#737AA8',
   },
   soundText: {
     fontSize: 12,
@@ -560,8 +694,8 @@ const styles = StyleSheet.create({
   },
   quote: {
     marginTop: 24,
-    fontSize: 16,
-    color: '#FF7B86',
+    fontSize: 20,
+    color: '#F8BB84',
     textAlign: 'center',
     fontStyle: 'italic',
     textShadowColor: '#FFF',
@@ -579,6 +713,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
     alignItems: 'center',
+    marginTop: 5,
   },
   infoSubject: {
     fontSize: 18,
@@ -603,7 +738,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   progressBarFill: {
-    backgroundColor: '#FF7B86',
+    backgroundColor: '#737AA8',
     borderRadius: 12,
     padding: 2,
     width: '0%',
@@ -697,7 +832,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backgroundOptionActive: {
-    backgroundColor: '#FF7B86',
+    backgroundColor: '#737AA8',
   },
   backgroundText: {
     fontSize: 16,
