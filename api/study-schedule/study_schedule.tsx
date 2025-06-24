@@ -1,6 +1,5 @@
 import { n8nSurveyData } from "@/types/n8n_response";
-import { Activities, DailySession, Milestones, StudySchedule, WeeklyPlan } from "@/types/study_schedule";
-import { ID } from "react-native-appwrite";
+import { Query } from "react-native-appwrite";
 import { config, databases } from "../index";
 
 export const sendSurveyToN8n = async (userId: string, responses: { questionId: string; response: string }[]): Promise<n8nSurveyData> => {
@@ -41,98 +40,89 @@ export const sendSurveyToN8n = async (userId: string, responses: { questionId: s
     }
 };
 
-export const saveStudySchedule = async (studySchedule: StudySchedule) => {
+export const getWeeklyPlanByStudyScheduleId = async (studyScheduleId: string) => {
     try {
-        const response = await databases.createDocument(
-            config.databaseId,
-            config.collections.studySchedules,
-            ID.unique(), // Assuming $id is the unique identifier
-            studySchedule
-        );
-        console.log("Study Schedule Save Output:", response);
-        return response;
-    } catch (error: any) {
-        console.error("Study schedule save error:", error);
-        throw new Error(`Failed to save study schedule: ${error.message}`);
-    }
-}
-
-export const saveWeeklyPlan = async (weeklyPlan: WeeklyPlan) => {
-    try {
-        const response = await databases.createDocument(
+        const response = await databases.listDocuments(
             config.databaseId,
             config.collections.weeklyPlans,
-            ID.unique(), // Assuming $id is the unique identifier
-            weeklyPlan
+            [Query.equal("study_schedule_id", studyScheduleId)]
         );
-        console.log("Weekly Plan Save Output:", response);
-        return response;
+        console.log("Weekly Plan Output:", response);
+        return response.documents;
     } catch (error: any) {
-        console.error("Weekly Plan save error:", error);
-        throw new Error(`Failed to save Weekly Plan: ${error.message}`);
+        console.error("Weekly Plan fetch error:", error);
+        throw new Error(`Failed to fetch weekly plan: ${error.message}`);
     }
-}
+};
 
-export const saveDailySession = async (dailySession: DailySession) => {
+export const getStudySchedule = async (studyScheduleId: string) => {
     try {
-        const response = await databases.createDocument(
+        const studySchedule = await databases.getDocument(
             config.databaseId,
-            config.collections.dailySessions,
-            ID.unique(), // Assuming $id is the unique identifier
-            dailySession
+            config.collections.studySchedules,
+            studyScheduleId
         );
-        console.log("Daily Session Save Output:", response);
-        return response;
+        console.log("Study Schedule Output:", studySchedule);
+        return studySchedule;
     } catch (error: any) {
-        console.error("Daily Session save error:", error);
-        throw new Error(`Failed to save Daily Session: ${error.message}`);
+        console.error("Study schedule fetch error:", error);
+        throw new Error(`Failed to fetch study schedule: ${error.message}`);
     }
-}
+};
 
-export const saveActivities = async (activities: Activities) => {
+export const getStudySchedulesByUserId = async (userId: string) => {
     try {
-        const response = await databases.createDocument(
+        const response = await databases.listDocuments(
             config.databaseId,
-            config.collections.activities,
-            ID.unique(), // Assuming $id is the unique identifier
-            activities
+            config.collections.studySchedules,
+            [Query.equal("user_id", userId)]
         );
-        console.log("Activities Save Output:", response);
-        return response;
+        console.log("Study Schedules by User Output:", response);
+        return response.documents;
     } catch (error: any) {
-        console.error("Activities save error:", error);
-        throw new Error(`Failed to save Activities: ${error.message}`);
+        console.error("Study schedules by user fetch error:", error);
+        throw new Error(`Failed to fetch study schedules by user: ${error.message}`);
     }
-}
+};
 
-export const saveMilestones = async (milestones: Milestones) => {
-    try {
-        const response = await databases.createDocument(
-            config.databaseId,
-            config.collections.milestones,
-            ID.unique(), // Assuming $id is the unique identifier
-            milestones
-        );
-        console.log("Milestones Save Output:", response);
-        return response;
-    } catch (error: any) {
-        console.error("Milestones save error:", error);
-        throw new Error(`Failed to save Milestones: ${error.message}`);
-    }
-}
+export const getWeeklyPlansByIds = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return [];
+    console.log('WeeklyPlan Collection ID:', config.collections.weeklyPlans);
+    const response = await databases.listDocuments(
+        config.databaseId,
+        config.collections.weeklyPlans,
+        [Query.equal('$id', ids)]
+    );
+    return response.documents;
+};
 
-// export const getStudySchedule = async (studyScheduleId: string) => {
-//   try {
-//     const studySchedule = await databases.getDocument(
-//       config.databaseId,
-//       config.collections.studySchedule,
-//       studyScheduleId
-//     );
-//     console.log("Study Schedule Output:", studySchedule);
-//     return studySchedule;
-//   } catch (error: any) {
-//     console.error("Study schedule fetch error:", error);
-//     throw new Error(`Failed to fetch study schedule: ${error.message}`);
-//   }
-// }
+export const getDailySessionsByIds = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return [];
+    const response = await databases.listDocuments(
+        config.databaseId,
+        config.collections.dailySessions,
+        [Query.equal('$id', ids)]
+    );
+    return response.documents;
+};
+
+export const getActivitiesByIds = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return [];
+    const response = await databases.listDocuments(
+        config.databaseId,
+        config.collections.activities,
+        [Query.equal('$id', ids)]
+    );
+    return response.documents;
+};
+
+export const getMilestonesByIds = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return [];
+    const response = await databases.listDocuments(
+        config.databaseId,
+        config.collections.milestones,
+        [Query.equal('$id', ids)]
+    );
+    return response.documents;
+};
 

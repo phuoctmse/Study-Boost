@@ -2,7 +2,7 @@ import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getCurrentUserProfile, logout } from '../../api/auth';
+import { getCurrentUserProfile, getUserDocumentById, logout } from '../../api/auth';
 
 const COLOR_BG = '#737AA8';
 const COLOR_CARD = '#F5F5F7';
@@ -26,11 +26,15 @@ export default function Profile() {
         const user = await getCurrentUserProfile();
         setName(user.name || '');
         setEmail(user.email || '');
-        // Set default subscription plan to free
-        setSubscriptionPlan('free');
+        // Fetch user document for subscription_plan
+        const userDoc = await getUserDocumentById(user.$id);
+        setSubscriptionPlan((userDoc.subscription_plan || 'free').toLowerCase());
+        // Log user and userDoc data
+        console.log('Auth user:', user);
+        console.log('User document:', userDoc);
       } catch (err) {
         console.error('Error fetching user data:', err);
-        Alert.alert('Error', 'Failed to load profile data');
+        Alert.alert('Lỗi', 'Không thể tải dữ liệu hồ sơ');
       }
     };
     fetchUser();
@@ -72,21 +76,21 @@ export default function Profile() {
         </View>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.activeText}>
-          {subscriptionPlan === 'premium' ? 'Premium Plan' : 'Free Plan'}
+          {subscriptionPlan === 'premium' ? 'Gói Cao cấp' : subscriptionPlan === 'students' ? 'Gói Students' : 'Gói Free'}
         </Text>
-        {subscriptionPlan !== 'premium' && (
+        {subscriptionPlan !== 'premium' && subscriptionPlan !== 'students' && (
           <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
-            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+            <Text style={styles.upgradeButtonText}>Nâng cấp lên Students</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitle}>Personal Information</Text>
-          <TouchableOpacity>
+          <Text style={styles.cardTitle}>Thông tin cá nhân</Text>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Feather name="edit" size={18} color={COLOR_BG} />
-            <Text style={styles.editText}> Edit</Text>
+            <Text style={styles.editText}> Chỉnh sửa</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.infoRow}>
@@ -96,7 +100,7 @@ export default function Profile() {
         </View>
         <View style={styles.infoRow}>
           <Feather name="phone" size={20} color={COLOR_BG} style={styles.infoIcon} />
-          <Text style={styles.infoLabel}>Phone</Text>
+          <Text style={styles.infoLabel}>Số điện thoại</Text>
           <Text style={styles.infoValue}>{phone}</Text>
         </View>
         <View style={styles.infoRow}>
@@ -106,31 +110,31 @@ export default function Profile() {
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="location-outline" size={20} color={COLOR_BG} style={styles.infoIcon} />
-          <Text style={styles.infoLabel}>Location</Text>
+          <Text style={styles.infoLabel}>Địa chỉ</Text>
           <Text style={styles.infoValue}>{location}</Text>
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Utilities</Text>
+        <Text style={styles.cardTitle}>Tiện ích</Text>
         <TouchableOpacity style={styles.utilityRow}>
           <Feather name="download" size={20} color={COLOR_BG} style={styles.utilityIcon} />
-          <Text style={styles.utilityText}>Downloads</Text>
+          <Text style={styles.utilityText}>Tải xuống</Text>
           <Ionicons name="chevron-forward" size={20} color={COLOR_BG} style={styles.utilityChevron} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.utilityRow}>
           <Feather name="bar-chart-2" size={20} color={COLOR_BG} style={styles.utilityIcon} />
-          <Text style={styles.utilityText}>Usage Analytics</Text>
+          <Text style={styles.utilityText}>Phân tích sử dụng</Text>
           <Ionicons name="chevron-forward" size={20} color={COLOR_BG} style={styles.utilityChevron} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.utilityRow}>
           <Feather name="help-circle" size={20} color={COLOR_BG} style={styles.utilityIcon} />
-          <Text style={styles.utilityText}>Ask Help-Desk</Text>
+          <Text style={styles.utilityText}>Hỗ trợ</Text>
           <Ionicons name="chevron-forward" size={20} color={COLOR_BG} style={styles.utilityChevron} />
         </TouchableOpacity>
         <TouchableOpacity style={[styles.utilityRow, { borderBottomWidth: 0 }]} onPress={handleLogout}>
           <Feather name="log-out" size={20} color={COLOR_ACCENT} style={styles.utilityIcon} />
-          <Text style={[styles.utilityText, { color: COLOR_ACCENT }]}>Log-Out</Text>
+          <Text style={[styles.utilityText, { color: COLOR_ACCENT }]}>Đăng xuất</Text>
           <Ionicons name="chevron-forward" size={20} color={COLOR_ACCENT} style={styles.utilityChevron} />
         </TouchableOpacity>
       </View>
@@ -202,6 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+    width: '100%',
   },
   cardTitle: {
     fontSize: 15,
@@ -220,16 +225,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     paddingVertical: 10,
-    gap: 8,
   },
   infoIcon: {
-    marginRight: 2,
+    width: 24,
+    textAlign: 'center',
+    marginRight: 8,
   },
   infoLabel: {
     color: '#737AA8',
     fontWeight: 'bold',
     fontSize: 13,
-    width: 70,
+    width: 90,
   },
   infoValue: {
     color: '#353859',

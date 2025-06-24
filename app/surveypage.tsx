@@ -1,5 +1,4 @@
 import { sendSurveyToN8n } from "@/api/study-schedule/study_schedule";
-import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import {
@@ -12,6 +11,7 @@ import {
   View
 } from "react-native";
 import { getSurveyQuestions } from "../api/survey/survey";
+import LoadingSurvey from '../components/LoadingSurvey';
 import { SurveyQuestion } from "../types/survey_question";
 
 export default function Survey() {
@@ -103,11 +103,6 @@ export default function Survey() {
 
           setResponses([]);
           setSurveyCompleted(true);
-          
-          setTimeout(() => {
-            router.replace("/(authenticated)/pomodoro");
-          }, 2000);
-
         } catch (error: any) {
           console.error("Error sending to n8n:", error);
           setError(`Failed to process survey: ${error.message}`);
@@ -158,29 +153,18 @@ export default function Survey() {
     );
   }
 
+  if (isSaving) {
+    return (
+      <LoadingSurvey loading={true} message="Đang chờ AI tạo lịch học cá nhân cho bạn..." />
+    );
+  }
+
   if (surveyCompleted) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.congratsContainer}>
-          <Text style={styles.pageTitle}>
-            Before you start learning, let us know a bit about you
-          </Text>
-          <Ionicons name="checkmark-circle" size={80} color="#EEAD78" />
-          <Text style={styles.congratsTitle}>Congratulations!</Text>
-          <Text style={styles.congratsText}>
-            You`ve completed the survey. Thank you for sharing about yourself!
-          </Text>
-          <Text style={styles.congratsDescription}>
-            Let`s start your learning journey! We`ve prepared some great study tools for you.
-          </Text>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={navigateToPomodoroTimer}
-          >
-            <Text style={styles.continueButtonText}>Continue to App</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <LoadingSurvey 
+        loading={false} 
+        onCheckSchedule={() => router.replace('/(authenticated)/schedule')} 
+      />
     );
   }
 
