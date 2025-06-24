@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getCurrentUserProfile, getUserDocumentById, logout } from '../../api/auth';
+import { getFeedbackByUserId } from '../../api/feedback/feedback';
+import FeedbackForm from '../../components/FeedbackForm';
 
 const COLOR_BG = '#737AA8';
 const COLOR_CARD = '#F5F5F7';
@@ -19,6 +21,10 @@ export default function Profile() {
   const [location, setLocation] = useState('');
   const [subscriptionPlan, setSubscriptionPlan] = useState('free');
   const router = useRouter();
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userFeedback, setUserFeedback] = useState<any>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -26,15 +32,25 @@ export default function Profile() {
         const user = await getCurrentUserProfile();
         setName(user.name || '');
         setEmail(user.email || '');
+        setUserId(user.$id);
         // Fetch user document for subscription_plan
         const userDoc = await getUserDocumentById(user.$id);
         setSubscriptionPlan((userDoc.subscription_plan || 'free').toLowerCase());
         // Log user and userDoc data
         console.log('Auth user:', user);
         console.log('User document:', userDoc);
+        // Fetch feedback
+        setFeedbackLoading(true);
+        const feedbacks = await getFeedbackByUserId(user.$id);
+        const latest = feedbacks && feedbacks.length > 0
+          ? feedbacks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+          : null;
+        setUserFeedback(latest);
       } catch (err) {
         console.error('Error fetching user data:', err);
         Alert.alert('Lỗi', 'Không thể tải dữ liệu hồ sơ');
+      } finally {
+        setFeedbackLoading(false);
       }
     };
     fetchUser();
@@ -55,6 +71,28 @@ export default function Profile() {
 
   const handleUpgrade = () => {
     router.push('/(authenticated)/premium');
+  };
+
+  const handleOpenFeedback = () => {
+    setFeedbackModalVisible(true);
+  };
+  const handleCloseFeedback = async () => {
+    setFeedbackModalVisible(false);
+    // Refresh feedback after closing modal
+    if (userId) {
+      setFeedbackLoading(true);
+      try {
+        const feedbacks = await getFeedbackByUserId(userId);
+        const latest = feedbacks && feedbacks.length > 0
+          ? feedbacks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+          : null;
+        setUserFeedback(latest);
+      } catch (err) {
+        // ignore
+      } finally {
+        setFeedbackLoading(false);
+      }
+    }
   };
 
   return (
@@ -138,6 +176,37 @@ export default function Profile() {
           <Ionicons name="chevron-forward" size={20} color={COLOR_ACCENT} style={styles.utilityChevron} />
         </TouchableOpacity>
       </View>
+
+      {/* Feedback Button */}
+      <View style={{ alignItems: 'center', marginBottom: 24 }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#FCC89B',
+            borderRadius: 20,
+            paddingVertical: 14,
+            paddingHorizontal: 40,
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 3,
+            elevation: 3,
+            width: '80%',
+          }}
+          onPress={handleOpenFeedback}
+          disabled={feedbackLoading || !userId}
+        >
+          <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 17 }}>
+            {userFeedback ? 'Chỉnh sửa phản hồi' : 'Gửi phản hồi mới'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <FeedbackForm
+        visible={feedbackModalVisible}
+        onClose={handleCloseFeedback}
+        userId={userId || undefined} // Use undefined instead of empty string
+        initialFeedback={userFeedback}
+      />
     </ScrollView>
   );
 }
