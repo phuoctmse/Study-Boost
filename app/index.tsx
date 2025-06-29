@@ -1,15 +1,11 @@
 import { getSurveyQuestions } from "@/api/survey/survey";
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  FlatList,
   Image,
-  ImageBackground,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -26,19 +22,19 @@ const slides = [
   {
     id: '1',
     image: require('../assets/images/QLTG.jpg'),
-    title: 'Quản lý thời gian',
+    title: 'Calculate more quickly and precisely',
     description: 'Tối ưu hoá việc học tập với kỹ thuật Pomodoro'
   },
   {
     id: '2',
     image: require('../assets/images/DTTT.jpg'),
-    title: 'Duy trì tập trung',
+    title: 'Strengthen your focus while reading',
     description: 'Tránh phân tâm và tạo thói quen học tập hiệu quả'
   },
   {
     id: '3',
     image: require('../assets/images/KNCDHT.jpg'),
-    title: 'Kết nối',
+    title: 'Connect with study community',
     description: 'Học tập cùng cộng đồng và chia sẻ thành tích'
   },
 ];
@@ -47,9 +43,8 @@ export default function Index() {
   const [loggedInUser, setLoggedInUser] =
     useState<Models.User<Models.Preferences> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const slidesRef = useRef<FlatList>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     // Check if user is already logged in
@@ -79,11 +74,33 @@ export default function Index() {
     }
   };
 
-  const viewableItemsChanged = useRef(({ viewableItems }: any) => {
-    setCurrentIndex(viewableItems[0]?.index || 0);
-  }).current;
+  const handleNext = () => {
+    if (currentSlideIndex < slides.length - 1) {
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      setTimeout(() => {
+        setCurrentSlideIndex(currentSlideIndex + 1);
+      }, 200);
+    } else {
+      // Last slide - navigate to login
+      router.push("/login");
+    }
+  };
 
-  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+  const handleSkip = () => {
+    router.push("/login");
+  };
 
   if (isLoading) {
     return (
@@ -95,7 +112,7 @@ export default function Index() {
   }
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#737AA8" />
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fc" />
       {loggedInUser ? (
         // If user is logged in, redirect to pomodoro page
         (() => {
@@ -111,125 +128,69 @@ export default function Index() {
           );
         })()
       ) : (
-        // User is not logged in - show redesigned app landing page
-        <View style={styles.contentContainer}>
-          {/* App Header */}
-          <View style={styles.appHeader}>
-            <Image
-              source={require("../assets/images/icon.png")}
-              style={styles.headerIcon}
-              resizeMode="contain"
-            />
-          </View>
-          
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            {/* Hero Section with Background */}
-            <ImageBackground
-              source={require("../assets/images/icon.png")}
-              style={styles.heroBackground}
-              imageStyle={{ opacity: 0.1 }}
-            >
-              <View style={styles.heroContent}>
-                <Text style={styles.heroTitle}>
-                  Nâng cao hiệu quả học tập với AI & Gamification!
-                </Text>
-                <Text style={styles.heroSubtitle}>
-                  Quản lý thời gian và duy trì tập trung hiệu quả
-                </Text>
-              </View>
-            </ImageBackground>
-
-            {/* Action Buttons */}
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity 
-                style={styles.primaryActionButton}
-                onPress={() => router.push("/register")}
-              >
-                <Text style={styles.primaryActionText}>Đăng ký ngay</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.secondaryActionButton}
-                onPress={() => router.push("/login")}
-              >
-                <Text style={styles.secondaryActionText}>Đã có tài khoản? Đăng nhập</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Info Slide View with Dot Indicators */}
-            <View style={styles.slideViewContainer}>
-              <FlatList
-                data={slides}
-                renderItem={({ item }) => (
-                  <View style={styles.slideItem}>
-                    <Image
-                      source={item.image}
-                      style={styles.slideImage}
-                      resizeMode="cover"
-                    />
-                    <Text style={styles.slideTitle}>{item.title}</Text>
-                    <Text style={styles.slideDescription}>{item.description}</Text>
-                  </View>
-                )}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                bounces={false}
-                keyExtractor={(item) => item.id}
-                onScroll={Animated.event(
-                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                  { useNativeDriver: false }
-                )}
-                onViewableItemsChanged={viewableItemsChanged}
-                viewabilityConfig={viewConfig}
-                ref={slidesRef}
+        // Onboarding slides
+        <View style={styles.onboardingContainer}>
+          {/* Progress bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${((currentSlideIndex + 1) / slides.length) * 100}%` }
+                ]} 
               />
-              
-              {/* Dot Indicators */}
-              <View style={styles.dotIndicatorsContainer}>
-                {slides.map((_, index) => {
-                  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-                  
-                  const dotWidth = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [8, 16, 8],
-                    extrapolate: 'clamp'
-                  });
-                  
-                  const opacity = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [0.3, 1, 0.3],
-                    extrapolate: 'clamp'
-                  });
-                  
-                  return (
-                    <Animated.View
-                      key={index.toString()}
-                      style={[
-                        styles.dot,
-                        {
-                          width: dotWidth,
-                          opacity: opacity,
-                          backgroundColor: index === currentIndex ? '#3a3b5c' : '#d4d4d4'
-                        }
-                      ]}
-                    />
-                  );
-                })}
-              </View>
             </View>
+          </View>
 
-            {/* Footer */}
-            <View style={styles.footer}>
+          {/* Skip button */}
+          <TouchableOpacity 
+            style={styles.skipButton}
+            onPress={handleSkip}
+          >
+            <Text style={styles.skipText}>Skip</Text>
+          </TouchableOpacity>
+
+          {/* Slide content */}
+          <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
+            <View style={styles.imageContainer}>
               <Image
-                source={require("../assets/images/icon.png")}
-                style={styles.footerLogo}
+                source={slides[currentSlideIndex].image}
+                style={styles.slideImage}
                 resizeMode="contain"
               />
-              <Text style={styles.footerText}>© 2023 Study Boost</Text>
             </View>
-          </ScrollView>
+
+            <View style={styles.textContainer}>
+              <Text style={styles.slideTitle}>
+                {slides[currentSlideIndex].title}
+              </Text>
+              <Text style={styles.slideDescription}>
+                {slides[currentSlideIndex].description}
+              </Text>
+            </View>
+          </Animated.View>
+
+          {/* Bottom buttons */}
+          <View style={styles.bottomButtons}>
+            <TouchableOpacity 
+              style={styles.noButton}
+              onPress={handleSkip}
+            >
+              <Text style={styles.noButtonText}>No</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.yesButton}
+              onPress={handleNext}
+            >
+              <Text style={styles.yesButtonText}>Yes</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Page indicator */}
+          <View style={styles.pageIndicator}>
+            <View style={styles.indicatorLine} />
+          </View>
         </View>
       )}
     </SafeAreaView>
@@ -252,76 +213,113 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f4f6f8",
   },
-  contentContainer: {
+  onboardingContainer: {
     flex: 1,
+    backgroundColor: "#f8f9fc",
+    paddingTop: 20,
   },
-  scrollView: {
-    flex: 1,
-  },
-  appHeader: {
-    backgroundColor: "#737AA8",
-    paddingVertical: 16,
+  progressContainer: {
     paddingHorizontal: 20,
-    alignItems: "center",
-    elevation: 4,
+    marginBottom: 20,
   },
-  headerIcon: {
-    width: 150,
-    height: 40,
+  progressBar: {
+    height: 4,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 2,
   },
-  
-  // Hero Section
-  heroBackground: {
-    backgroundColor: "#737AA8",
-    padding: 24,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    overflow: "hidden",
+  progressFill: {
+    height: 4,
+    backgroundColor: "#4a4a4a",
+    borderRadius: 2,
   },
-  heroContent: {
-    alignItems: "center",
-    paddingVertical: 30,
+  skipButton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    zIndex: 1,
   },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  heroSubtitle: {
+  skipText: {
     fontSize: 16,
-    color: "#fff",
-    textAlign: "center",
-    opacity: 0.9,
+    color: "#666",
   },
-  
-  // Action Buttons
-  actionButtonsContainer: {
-    padding: 20,
-    marginTop: -20,
-  },
-  primaryActionButton: {
-    backgroundColor: "#3a3b5c",
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: "row",
+  slideContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 4,
+    paddingHorizontal: 40,
   },
-  primaryActionText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginRight: 8,
+  imageContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 40,
   },
-  secondaryActionButton: {
-    marginTop: 12,
-    paddingVertical: 12,
+  slideImage: {
+    width: width * 0.7,
+    height: width * 0.7,
+    maxHeight: 300,
+  },
+  textContainer: {
+    alignItems: "center",
+    marginBottom: 60,
+  },
+  slideTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 32,
+  },
+  slideDescription: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  bottomButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 40,
+    marginBottom: 30,
+  },
+  noButton: {
+    backgroundColor: "#f0f0f0",
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 25,
+    minWidth: 100,
     alignItems: "center",
   },
+  noButtonText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "500",
+  },
+  yesButton: {
+    backgroundColor: "#4a4a4a",
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 25,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  yesButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "500",
+  },
+  pageIndicator: {
+    alignItems: "center",
+    paddingBottom: 20,
+  },
+  indicatorLine: {
+    width: 134,
+    height: 5,
+    backgroundColor: "#4a4a4a",
+    borderRadius: 2.5,
+  },
+
   secondaryActionText: {
     color: "#353859",
     fontSize: 16,
@@ -337,25 +335,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  slideImage: {
-    width: width * 0.8,
-    height: width * 0.6,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-  slideTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#353859',
-    marginBottom: 10,
-    textAlign: 'center'
-  },
-  slideDescription: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
+ 
   dotIndicatorsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

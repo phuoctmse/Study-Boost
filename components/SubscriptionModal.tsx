@@ -36,7 +36,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ visible, onClose,
           
           {/* Message */}
           <Text style={styles.message}>
-            Tính năng này chỉ khả dụng cho gói Sinh viên hoặc Cao cấp. Vui lòng nâng cấp gói của bạn để truy cập trang này.
+            Tính năng này chỉ khả dụng cho gói Students. Vui lòng nâng cấp gói của bạn để truy cập trang này.
           </Text>
           
           {/* Feature comparison */}
@@ -59,7 +59,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ visible, onClose,
           
           {/* Action buttons */}
           <TouchableOpacity style={styles.upgradeButton} onPress={onUpgrade}>
-            <Text style={styles.upgradeButtonText}>Nâng cấp lên Cao cấp</Text>
+            <Text style={styles.upgradeButtonText}>Nâng cấp lên gói Students</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.backButton} onPress={onClose}>

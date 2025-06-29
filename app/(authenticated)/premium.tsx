@@ -32,9 +32,9 @@ const PremiumPage = () => {
   return (
     <SafeAreaView style={styles.container}>      
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Choose a plan</Text>
+        <Text style={styles.title}>Chọn gói học</Text>
         <Text style={styles.subtitle}>
-          Whichever plan you pick, it's free until you love your study.
+          Dù bạn chọn gói nào, hãy trải nghiệm miễn phí cho đến khi bạn thực sự yêu thích việc học!
         </Text>
 
         <View style={styles.plansContainerVertical}>
@@ -43,106 +43,106 @@ const PremiumPage = () => {
             <View style={styles.planHeader}>
               <View style={styles.planTitleContainer}>
                 <Text style={styles.planTitleEmoji}>🆓</Text>
-                <Text style={styles.planTitle}>Free (Default Plan)</Text>
+                <Text style={styles.planTitle}>Miễn phí (Gói mặc định)</Text>
               </View>
               <Text style={styles.planPrice}>
                 <Text style={styles.priceAmount}>0đ</Text>
-                <Text style={styles.pricePeriod}>/mo</Text>
+                <Text style={styles.pricePeriod}>/tháng</Text>
               </Text>
             </View>
 
             <View style={styles.featuresContainer}>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Access to basic flashcards</Text>
+                <Text style={styles.featureText}>Truy cập bộ thẻ ghi nhớ cơ bản</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Limited daily quizzes</Text>
+                <Text style={styles.featureText}>Giới hạn số lượng câu hỏi mỗi ngày</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Standard learning streak tracker</Text>
+                <Text style={styles.featureText}>Theo dõi chuỗi ngày học cơ bản</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Basic study reminders</Text>
+                <Text style={styles.featureText}>Nhắc nhở học tập cơ bản</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Limited subject categories</Text>
+                <Text style={styles.featureText}>Giới hạn số lượng môn học</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Community forum access</Text>
+                <Text style={styles.featureText}>Tham gia cộng đồng học tập</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>View progress history (last 7 days)</Text>
+                <Text style={styles.featureText}>Xem lịch sử tiến độ (7 ngày gần nhất)</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.currentButton}>
-              <Text style={styles.currentButtonText}>Current</Text>
+              <Text style={styles.currentButtonText}>Đang sử dụng</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Premium Plan */}
+          {/* Students Plan */}
           <View style={[styles.planCard, styles.premiumCard]}>
             <View style={styles.popularTag}>
-              <Text style={styles.popularText}>Most popular</Text>
+              <Text style={styles.popularText}>Phổ biến nhất</Text>
             </View>
             <View style={styles.planHeader}>
               <View style={styles.planTitleContainer}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji]}>💎</Text>
-                <Text style={[styles.planTitle, styles.premiumTitle]}>Premium</Text>
+                <Text style={[styles.planTitleEmoji, styles.premiumEmoji]}>🏅</Text>
+                <Text style={[styles.planTitle, styles.premiumTitle]}>Students</Text>
               </View>
               <Text style={[styles.planPrice, styles.premiumPrice]}>
-                <Text style={styles.priceAmount2}>150,000 VND</Text>
-                <Text style={styles.pricePeriod2}>/mo</Text>
+                <Text style={styles.priceAmount2}>150.000 VNĐ</Text>
+                <Text style={styles.pricePeriod2}>/tháng</Text>
               </Text>
             </View>
 
             <View style={styles.featuresContainer}>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Unlimited flashcard creation</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Tạo thẻ ghi nhớ không giới hạn</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>AI-generated practice questions</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Câu hỏi luyện tập do AI tạo ra</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Smart review system (Spaced Repetition)</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Ôn tập thông minh (Lặp lại ngắt quãng)</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Access to premium study sets</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Truy cập bộ đề học nâng cao</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Offline access to materials</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Học offline không cần mạng</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Advanced performance analytics</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Phân tích hiệu suất nâng cao</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Customizable study plans</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Tùy chỉnh kế hoạch học tập</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Priority support</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Hỗ trợ ưu tiên</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>No ads</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Không quảng cáo</Text>
               </View>
               <View style={styles.featureItem}>
                 <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Early access to new features</Text>
+                <Text style={[styles.featureText, styles.premiumFeatureText]}>Trải nghiệm sớm các tính năng mới</Text>
               </View>
             </View>
 
@@ -150,7 +150,7 @@ const PremiumPage = () => {
               style={styles.purchaseButton}
               onPress={handlePurchase}
             >
-              <Text style={styles.purchaseButtonText}>Purchase</Text>
+              <Text style={styles.purchaseButtonText}>Nâng cấp ngay</Text>
             </TouchableOpacity>
           </View>
         </View>

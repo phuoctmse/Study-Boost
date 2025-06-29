@@ -1,8 +1,13 @@
 import { sendSurveyToN8n } from "@/api/study-schedule/study_schedule";
+import { AntDesign, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -12,7 +17,10 @@ import {
 } from "react-native";
 import { getSurveyQuestions } from "../api/survey/survey";
 import LoadingSurvey from '../components/LoadingSurvey';
+import SurveyTransition from '../components/SurveyTransition';
 import { SurveyQuestion } from "../types/survey_question";
+
+const { width } = Dimensions.get('window');
 
 export default function Survey() {
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
@@ -25,7 +33,14 @@ export default function Survey() {
   const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
   const [responses, setResponses] = useState<{ questionId: string; response: string }[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [showTransition, setShowTransition] = useState(false);
+  const [transitionIndex, setTransitionIndex] = useState(0);
   const { user_id: userIdParam } = useLocalSearchParams();
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,7 +80,64 @@ export default function Survey() {
     fetchData();
   }, []);
 
+  // Animation effect when question changes
+  useEffect(() => {
+    // Reset animations
+    fadeAnim.setValue(0);
+    slideAnim.setValue(30);
+    
+    // Set progress value based on current question
+    const progressValue = questions.length > 0 ? 
+      (currentQuestionIndex + 1) / questions.length : 0;
+    
+    // Run animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic)
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic)
+      }),
+      Animated.timing(progressAnim, {
+        toValue: progressValue,
+        duration: 600,
+        useNativeDriver: false,
+        easing: Easing.inOut(Easing.cubic)
+      })
+    ]).start();
+  }, [currentQuestionIndex, questions]);
+
   const currentQuestion = questions[currentQuestionIndex];
+  
+  const getQuestionIcon = () => {
+    if (!currentQuestion) return "help-circle";
+    
+    // Choose icon based on question content
+    if (currentQuestion.question_text.toLowerCase().includes("time") || 
+        currentQuestion.question_text.toLowerCase().includes("hour") ||
+        currentQuestion.question_text.toLowerCase().includes("when")) {
+      return "time";
+    } else if (currentQuestion.question_text.toLowerCase().includes("goal") ||
+              currentQuestion.question_text.toLowerCase().includes("target") ||
+              currentQuestion.question_text.toLowerCase().includes("aim")) {
+      return "flag";
+    } else if (currentQuestion.question_text.toLowerCase().includes("subject") ||
+              currentQuestion.question_text.toLowerCase().includes("learn") ||
+              currentQuestion.question_text.toLowerCase().includes("study")) {
+      return "book";
+    } else if (currentQuestion.question_text.toLowerCase().includes("preference") ||
+              currentQuestion.question_text.toLowerCase().includes("like")) {
+      return "heart";
+    }
+    
+    return "help-circle";
+  };
 
   const handleSubmit = async (response: string) => {
     if (!currentQuestion || !userId || userId.trim() === "") {
@@ -87,8 +159,18 @@ export default function Survey() {
 
       if (currentQuestionIndex < questions.length - 1) {
         setResponses(updatedResponses);
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setTextResponse("");
+        setTransitionIndex(currentQuestionIndex);
+        setShowTransition(true);
+        
+        // The transition component will call this function when complete
+        const proceedToNextQuestion = () => {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+          setTextResponse("");
+          setShowTransition(false);
+        };
+        
+        // Or directly set timeout if you don't want to use the component
+        // setTimeout(proceedToNextQuestion, 2000);
       } else {
         setIsSaving(true);
         try {
@@ -136,8 +218,13 @@ export default function Survey() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E68E56" />
-        <Text style={styles.loadingText}>Loading survey...</Text>
+        <Image 
+          source={require('../assets/images/icon.png')} 
+          style={styles.loadingLogo} 
+          resizeMode="contain"
+        />
+        <ActivityIndicator size="large" color="#FCC89B" />
+        <Text style={styles.loadingText}>Preparing your survey...</Text>
       </SafeAreaView>
     );
   }
@@ -155,7 +242,7 @@ export default function Survey() {
 
   if (isSaving) {
     return (
-      <LoadingSurvey loading={true} message="Đang chờ AI tạo lịch học cá nhân cho bạn" />
+      <LoadingSurvey loading={true} message="Chờ AI tạo lịch học cá nhân cho bạn" />
     );
   }
 
@@ -168,15 +255,57 @@ export default function Survey() {
     );
   }
 
+  if (showTransition) {
+    return (
+      <SurveyTransition 
+        index={transitionIndex + 1}
+        total={questions.length}
+        onComplete={() => {
+          setCurrentQuestionIndex(transitionIndex + 1);
+          setTextResponse("");
+          setShowTransition(false);
+        }}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with progress */}
+      <View style={styles.header}>
+        <View style={styles.progressBarContainer}>
+          <Animated.View 
+            style={[
+              styles.progressBar, 
+              { width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%']
+              }) }
+            ]} 
+          />
+        </View>
+        <Text style={styles.progressText}>
+          {currentQuestionIndex + 1} of {questions.length}
+        </Text>
+      </View>
+      
       <View style={styles.contentContainer}>
         <Text style={styles.pageTitle}>
-          Before you start learning, let us know a bit about you
+          Let's personalize your learning experience
         </Text>
 
         {currentQuestion ? (
-          <>
+          <Animated.View 
+            style={[
+              styles.questionCard,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+            ]}
+          >
+            <View style={styles.questionIconContainer}>
+              <Ionicons name={getQuestionIcon() as any} size={32} color="#737AA8" />
+            </View>
+            
+            <Text style={styles.questionNumber}>Question {currentQuestionIndex + 1}</Text>
             <Text style={styles.questionText}>
               {currentQuestion.question_text}
             </Text>
@@ -191,6 +320,7 @@ export default function Survey() {
                     disabled={submitting}
                   >
                     <Text style={styles.optionText}>{option}</Text>
+                    <AntDesign name="right" size={18} color="rgba(255,255,255,0.6)" />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -198,35 +328,52 @@ export default function Survey() {
               <View style={styles.textInputContainer}>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Enter your answer..."
-                  placeholderTextColor="#CCCCCC"
+                  placeholder="Type your answer here..."
+                  placeholderTextColor="#AAAAAA"
                   value={textResponse}
                   onChangeText={setTextResponse}
                   multiline={true}
                   numberOfLines={4}
                   maxLength={200}
                 />
+                <View style={styles.characterCounter}>
+                  <Text style={styles.characterCounterText}>{textResponse.length}/200</Text>
+                </View>
                 <TouchableOpacity
-                  style={styles.submitButton}
+                  style={[
+                    styles.submitButton,
+                    {opacity: textResponse.trim().length === 0 ? 0.7 : 1}
+                  ]}
                   onPress={handleTextSubmit}
                   disabled={submitting || textResponse.trim().length === 0}
                 >
-                  <Text style={styles.submitButtonText}>Submit</Text>
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.submitButtonText}>Submit</Text>
+                      <Ionicons name="paper-plane" size={18} color="#FFFFFF" />
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             )}
-
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </Text>
-            </View>
-          </>
+          </Animated.View>
         ) : (
-          <Text style={styles.noQuestionsText}>
-            No survey questions available.
-          </Text>
+          <View style={styles.noQuestionsCard}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={60} color="#FCC89B" />
+            <Text style={styles.noQuestionsText}>
+              No survey questions available.
+            </Text>
+          </View>
         )}
+        
+        <View style={styles.surveyInfo}>
+          <MaterialCommunityIcons name="shield-lock-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.surveyInfoText}>
+            Your answers help us create a personalized learning plan
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -235,79 +382,165 @@ export default function Survey() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#737AA8", // Dark purple background from the image
+    backgroundColor: "#737AA8",
+    paddingTop:70,
+  },
+  header: {
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#FCC89B',
+    borderRadius: 4,
+  },
+  progressText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    textAlign: 'right',
+    opacity: 0.8,
   },
   contentContainer: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
     padding: 20,
+    paddingTop: 10,
   },
   pageTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 30,
-    marginTop: 20,
-  },
-  questionText: {
     fontSize: 22,
     fontWeight: "bold",
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 30,
+    marginTop: 10,
+  },
+  questionCard: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 24,
+    paddingTop: 45,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    position: 'relative',
+  },
+  questionIconContainer: {
+    position: 'absolute',
+    top: -25,
+    left: '50%',
+    marginLeft: -25,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  questionNumber: {
+    fontSize: 14,
+    color: '#737AA8',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  questionText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#353859",
+    textAlign: "center",
+    marginBottom: 30,
+    lineHeight: 30,
   },
   optionsContainer: {
     width: "100%",
-    marginVertical: 20,
+    marginVertical: 10,
   },
   optionButton: {
-    backgroundColor: "#EEAD78", // Orange color for buttons from the image
-    borderRadius: 25,
-    padding: 15,
+    backgroundColor: "#EEAD78", 
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     marginVertical: 8,
+    flexDirection: 'row',
     alignItems: "center",
+    justifyContent: 'space-between',
     width: "100%",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   optionText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "500",
+    flex: 1,
   },
   textInputContainer: {
     width: "100%",
-    marginVertical: 20,
+    marginVertical: 10,
   },
   textInput: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 10,
-    padding: 15,
+    backgroundColor: "rgba(240, 240, 240, 0.8)",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
     color: "#333333",
     fontSize: 16,
     textAlignVertical: "top",
     minHeight: 120,
     width: "100%",
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  characterCounter: {
+    alignSelf: 'flex-end',
+    marginTop: 6,
+  },
+  characterCounterText: {
+    color: '#777777',
+    fontSize: 12,
   },
   submitButton: {
     backgroundColor: "#EEAD78",
-    borderRadius: 25,
-    padding: 15,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     marginTop: 15,
+    flexDirection: 'row',
     alignItems: "center",
+    justifyContent: "center",
     width: "100%",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   submitButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  progressContainer: {
-    marginTop: 40,
-  },
-  progressText: {
-    color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 17,
+    fontWeight: "600",
+    marginRight: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -315,84 +548,77 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#737AA8",
   },
+  loadingLogo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  },
   loadingText: {
     marginTop: 15,
     color: "#FFFFFF",
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#737AA8",
-    padding: 20,
-  },
-  errorText: {
-    color: "#FFFFFF",
     fontSize: 18,
-    textAlign: "center",
-    marginBottom: 20,
+    fontWeight: '500',
   },
-  retryButton: {
-    backgroundColor: "#E68E56",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-  },
-  retryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
+  noQuestionsCard: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noQuestionsText: {
-    color: "#FFFFFF",
+    color: "#353859",
     fontSize: 18,
     textAlign: "center",
+    marginTop: 15,
   },
-  // Congratulations screen styles
-  congratsContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-  },
-  congratsTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+  surveyInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 20,
-    marginBottom: 15,
+    marginHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(53, 56, 89, 0.3)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  congratsText: {
-    fontSize: 18,
+  surveyInfoText: {
     color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 15,
-  },
-  congratsDescription: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 40,
+    fontSize: 14,
+    marginLeft: 8,
     opacity: 0.9,
   },
-  continueButton: {
-    backgroundColor: "#EEAD78",
-    borderRadius: 25,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    alignItems: "center",
-    marginTop: 20,
-    width: "80%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  continueButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "600",
-  },
+  errorContainer: {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "#737AA8",
+  padding: 30,
+},
+errorText: {
+  color: "#FFFFFF",
+  fontSize: 18,
+  textAlign: "center",
+  marginBottom: 24,
+  lineHeight: 26,
+},
+retryButton: {
+  backgroundColor: "#EEAD78",
+  paddingVertical: 14,
+  paddingHorizontal: 32,
+  borderRadius: 12,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.15,
+  shadowRadius: 5,
+  elevation: 3,
+},
+retryButtonText: {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "600",
+},
 });

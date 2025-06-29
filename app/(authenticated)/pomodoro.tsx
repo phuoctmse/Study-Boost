@@ -5,6 +5,7 @@ import { Audio } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { schedulePomodoroNotification, setupAndroidNotificationChannel } from '../../components/NotificationHelper';
 
 const SOUNDS = [
   { name: 'Standard', icon: 'bell' },
@@ -223,7 +224,10 @@ export default function Pomodoro() {
             }
           });
           const activities = await getActivitiesByIds(allActivityIds);
-          setTodayActivities(activities);
+          // Sort activities to match the order of allActivityIds
+          const activitiesMap = Object.fromEntries(activities.map(a => [a.$id, a]));
+          const sortedActivities = allActivityIds.map(id => activitiesMap[id]).filter(Boolean);
+          setTodayActivities(sortedActivities);
           setCurrentActivityIndex(0);
         } else {
           setTodayActivities([]);
@@ -244,8 +248,19 @@ export default function Pomodoro() {
     }
   }, [currentActivityIndex, todayActivities]);
 
+  // Setup Android notification channel on mount
+  useEffect(() => {
+    setupAndroidNotificationChannel();
+  }, []);
+
   // After timer ends, move to next activity if available
-  const handleTimerEnd = () => {
+  const handleTimerEnd = async () => {
+    // Trigger local notification
+    await schedulePomodoroNotification({
+      title: 'Pomodoro hoàn thành!',
+      body: 'Đã đến lúc nghỉ ngơi hoặc chuyển sang hoạt động tiếp theo.',
+      secondsFromNow: 0,
+    });
     if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length - 1) {
       setCurrentActivityIndex((idx) => idx + 1);
       setIsRunning(false);
