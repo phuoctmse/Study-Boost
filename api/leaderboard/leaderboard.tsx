@@ -95,12 +95,29 @@ export const savePointToLeaderboard = async (userId: string, userName: string) =
           userId: userId,
           userName: userName,
           score: 10,
-          streak: 0,
+          streak: 1,
           updated_at: new Date().toISOString(),
         }
       );
     }
   } catch (error: any) {
     throw new Error(`Failed to save point to leaderboard: ${error.message}`);
+  }
+};
+
+export const getUserScoreAndStreak = async (userId: string) => {
+  try {
+    const res = await databases.listDocuments(
+      config.databaseId,
+      config.collections.leaderBoard,
+      [Query.equal("userId", userId)]
+    );
+    if (res.documents.length > 0) {
+      const doc = res.documents[0];
+      return { score: doc.score, streak: doc.streak };
+    }
+    return { score: 0, streak: 0 };
+  } catch (error: any) {
+    return { score: 0, streak: 0 };
   }
 };

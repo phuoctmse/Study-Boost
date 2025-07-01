@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getCurrentUserProfile, getUserDocumentById, logout } from '../../api/auth';
 import { getFeedbackByUserId } from '../../api/feedback/feedback';
+import { getUserScoreAndStreak } from '../../api/leaderboard/leaderboard';
 import FeedbackForm from '../../components/FeedbackForm';
 
 const COLOR_BG = '#737AA8';
@@ -20,6 +21,7 @@ export default function Profile() {
   const [website, setWebsite] = useState('');
   const [location, setLocation] = useState('');
   const [subscriptionPlan, setSubscriptionPlan] = useState('free');
+  const [userStreak, setUserStreak] = useState<number>(0);
   const router = useRouter();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -36,9 +38,9 @@ export default function Profile() {
         // Fetch user document for subscription_plan
         const userDoc = await getUserDocumentById(user.$id);
         setSubscriptionPlan((userDoc.subscription_plan || 'free').toLowerCase());
-        // Log user and userDoc data
-        console.log('Auth user:', user);
-        console.log('User document:', userDoc);
+        // Fetch streak
+        const { streak } = await getUserScoreAndStreak(user.$id);
+        setUserStreak(streak || 0);
         // Fetch feedback
         setFeedbackLoading(true);
         const feedbacks = await getFeedbackByUserId(user.$id);
@@ -98,12 +100,7 @@ export default function Profile() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: COLOR_BG }} contentContainerStyle={{ paddingBottom: 32 }}>
       <View style={styles.headerRow}>
-        <TouchableOpacity>
-          <Ionicons name="arrow-back" size={26} color={COLOR_TEXT} />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Ionicons name="settings-sharp" size={22} color={COLOR_ACCENT} />
-        </TouchableOpacity>
+       
       </View>
       <View style={styles.avatarSection}>
         <View style={styles.avatarGlow}>
@@ -115,6 +112,18 @@ export default function Profile() {
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.activeText}>
           {subscriptionPlan === 'premium' ? 'Gói Cao cấp' : subscriptionPlan === 'students' ? 'Gói Students' : 'Gói Free'}
+        </Text>
+        {/* Streak below package info */}
+        <Text style={{
+          color: '#FFD600',
+          fontWeight: 'bold',
+          fontSize: 20,
+          marginTop: 2,
+          marginBottom: 2,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}>
+          Streak: {userStreak} <Ionicons name="flame" size={16} color="#FFD600" style={{ marginLeft: 2, marginBottom: -2 }} />
         </Text>
         {subscriptionPlan !== 'premium' && subscriptionPlan !== 'students' && (
           <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
@@ -204,7 +213,7 @@ export default function Profile() {
       <FeedbackForm
         visible={feedbackModalVisible}
         onClose={handleCloseFeedback}
-        userId={userId || undefined} // Use undefined instead of empty string
+        userId={userId || undefined}
         initialFeedback={userFeedback}
       />
     </ScrollView>
@@ -216,7 +225,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 50,
     marginHorizontal: 16,
     marginBottom: 8,
   },

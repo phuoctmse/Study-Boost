@@ -1,36 +1,43 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { getLeaderboardByScore, getLeaderboardByStreak } from '@/api/leaderboard/leaderboard';
+import React, { useEffect, useState } from 'react';
 import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-interface UserRanking {
-  id: number;
-  username: string;
-  studyTime: string;
-  streakDays: number;
-  points: number;
-  rank?: number;
-}
+const PLACEHOLDER_AVATAR = 'https://via.placeholder.com/60';
 
 const LeaderboardScreen = () => {
-  const [activeTab, setActiveTab] = useState<'monthly' | 'point' | 'streak'>('monthly');
+  const [activeTab, setActiveTab] = useState<'point' | 'streak'>('point');
   const [fadeAnim] = useState(new Animated.Value(1));
-  const router = useRouter();
-  
-  // Add animation when switching tabs
-  const handleTabChange = (tab: 'monthly' | 'point' | 'streak') => {
-    // Fade out
+  const [pointRankings, setPointRankings] = useState<any[]>([]);
+  const [streakRankings, setStreakRankings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const points = await getLeaderboardByScore();
+        const streaks = await getLeaderboardByStreak();
+        setPointRankings(points.documents || []);
+        setStreakRankings(streaks.documents || []);
+      } catch (err) {
+        // Optionally handle error
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  // Animation for tab change
+  const handleTabChange = (tab: 'point' | 'streak') => {
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 150,
       useNativeDriver: true,
     }).start(() => {
-      // Change tab
       setActiveTab(tab);
-      
-      // Fade in
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 150,
@@ -38,145 +45,137 @@ const LeaderboardScreen = () => {
       }).start();
     });
   };
-    // Mock data - in a real app, you would fetch this from your backend
-  const rankings: UserRanking[] = [
-    { id: 1, username: 'User123', studyTime: '15H', streakDays: 5, points: 600, rank: 1 },
-    { id: 2, username: 'User123', studyTime: '14H', streakDays: 4, points: 580, rank: 2 },
-    { id: 3, username: 'User123', studyTime: '13H', streakDays: 3, points: 540, rank: 3 },
-    { id: 4, username: 'User123', studyTime: '11H', streakDays: 3, points: 520 },
-    { id: 5, username: 'User123', studyTime: '11H', streakDays: 2, points: 480 },
-    { id: 6, username: 'User123', studyTime: '11H', streakDays: 2, points: 450 },
-    { id: 7, username: 'User123', studyTime: '11H', streakDays: 1, points: 420 },
-    { id: 8, username: 'User123', studyTime: '11H', streakDays: 1, points: 400 },
-    { id: 9, username: 'User123', studyTime: '10H', streakDays: 1, points: 380 },
-    { id: 10, username: 'User123', studyTime: '9H', streakDays: 1, points: 350 },
-  ];
+
+  // Select correct rankings
+  const rankings = activeTab === 'point' ? pointRankings : streakRankings;
+
+  // Always show 10 users, fill with "None" if missing
+  const filledRankings = [
+    ...rankings,
+    ...Array.from({ length: Math.max(0, 10 - rankings.length) }, (_, i) => ({
+      $id: `none-${i}`,
+      userName: 'None',
+      score: 0,
+      streak: 0,
+    })),
+  ].slice(0, 10);
+
+  // Display value for each tab
+  const getDisplayValue = (user: any) => {
+    if (user.userName === 'None') return '-';
+    return activeTab === 'point'
+      ? user.score?.toString() || '0'
+      : `${user.streak || 0} days`;
+  };
+
+  // Label for each tab
+  const getLabel = () => (activeTab === 'streak' ? 'Streak' : 'Points');
+
+  // Tabs
   const renderTabs = () => (
     <View style={styles.tabContainer}>
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'monthly' && styles.activeTab]} 
-        onPress={() => handleTabChange('monthly')}
-      >
-        <Text style={[styles.tabText, activeTab === 'monthly' && styles.activeTabText]}>Monthly lessons</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'point' && styles.activeTab]} 
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'point' && styles.activeTab]}
         onPress={() => handleTabChange('point')}
       >
         <Text style={[styles.tabText, activeTab === 'point' && styles.activeTabText]}>Point</Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'streak' && styles.activeTab]} 
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'streak' && styles.activeTab]}
         onPress={() => handleTabChange('streak')}
       >
         <Text style={[styles.tabText, activeTab === 'streak' && styles.activeTabText]}>Streak</Text>
       </TouchableOpacity>
     </View>
   );
-  // Get display value based on active tab
-  const getDisplayValue = (user: UserRanking) => {
-    switch (activeTab) {
-      case 'monthly':
-        return user.studyTime;
-      case 'streak':
-        return `${user.streakDays} days`;
-      case 'point':
-        return user.points.toString();
-      default:
-        return user.studyTime;
-    }
-  };
 
-  // Get label based on active tab
-  const getLabel = () => {
-    switch (activeTab) {
-      case 'monthly':
-        return 'Times';
-      case 'streak':
-        return 'Streak';
-      case 'point':
-        return 'Points';
-      default:
-        return 'Times';
-    }
-  };
-
+  // Top 3
   const renderTopThree = () => (
     <View style={styles.topThreeContainer}>
       {/* 2nd Place */}
       <View style={[styles.topThreeCard, { marginTop: 20 }]}>
         <Text style={styles.rankText}>2ND</Text>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: 'https://via.placeholder.com/60' }} 
+          <Image
+            source={{ uri: PLACEHOLDER_AVATAR }}
             style={styles.avatar}
           />
-          <Text style={styles.username}>{rankings[1].username}</Text>
+          <Text style={styles.username}>{filledRankings[1]?.userName}</Text>
         </View>
         <Text style={styles.timeLabel}>{getLabel()}</Text>
-        <Text style={styles.timeValue}>{getDisplayValue(rankings[1])}</Text>
-        <TouchableOpacity style={styles.profileButton}>
+        <Text style={styles.timeValue}>{getDisplayValue(filledRankings[1])}</Text>
+        <TouchableOpacity style={styles.profileButton} disabled={filledRankings[1]?.userName === 'None'}>
           <Text style={styles.profileButtonText}>Profile</Text>
         </TouchableOpacity>
       </View>
-
       {/* 1st Place */}
       <View style={[styles.topThreeCard, { marginTop: 0 }]}>
         <Text style={[styles.rankText, { color: '#daa520' }]}>1ST</Text>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: 'https://via.placeholder.com/60' }} 
+          <Image
+            source={{ uri: PLACEHOLDER_AVATAR }}
             style={styles.avatar}
           />
-          <Text style={styles.username}>{rankings[0].username}</Text>
+          <Text style={styles.username}>{filledRankings[0]?.userName}</Text>
         </View>
         <Text style={styles.timeLabel}>{getLabel()}</Text>
-        <Text style={styles.timeValue}>{getDisplayValue(rankings[0])}</Text>
-        <TouchableOpacity style={styles.profileButton}>
+        <Text style={styles.timeValue}>{getDisplayValue(filledRankings[0])}</Text>
+        <TouchableOpacity style={styles.profileButton} disabled={filledRankings[0]?.userName === 'None'}>
           <Text style={styles.profileButtonText}>Profile</Text>
         </TouchableOpacity>
       </View>
-
       {/* 3rd Place */}
       <View style={[styles.topThreeCard, { marginTop: 40 }]}>
         <Text style={[styles.rankText, { color: '#cd7f32' }]}>3RD</Text>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: 'https://via.placeholder.com/60' }} 
+          <Image
+            source={{ uri: PLACEHOLDER_AVATAR }}
             style={styles.avatar}
           />
-          <Text style={styles.username}>{rankings[2].username}</Text>
+          <Text style={styles.username}>{filledRankings[2]?.userName}</Text>
         </View>
         <Text style={styles.timeLabel}>{getLabel()}</Text>
-        <Text style={styles.timeValue}>{getDisplayValue(rankings[2])}</Text>
-        <TouchableOpacity style={styles.profileButton}>
+        <Text style={styles.timeValue}>{getDisplayValue(filledRankings[2])}</Text>
+        <TouchableOpacity style={styles.profileButton} disabled={filledRankings[2]?.userName === 'None'}>
           <Text style={styles.profileButtonText}>Profile</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
+
+  // Ranks 4-10
   const renderRankingList = () => (
     <View style={styles.rankingListContainer}>
-      {rankings.slice(3).map((user, index) => (
-        <View key={user.id} style={styles.rankingItem}>
+      {filledRankings.slice(3).map((user, index) => (
+        <View key={user.$id || `none-${index + 4}`} style={styles.rankingItem}>
           <Text style={styles.rankingNumber}>{index + 4}</Text>
           <View style={styles.rankingAvatar}>
-            <Image 
-              source={{ uri: 'https://via.placeholder.com/40' }} 
+            <Image
+              source={{ uri: PLACEHOLDER_AVATAR }}
               style={styles.smallAvatar}
             />
           </View>
-          <Text style={styles.rankingUsername}>{user.username}</Text>
+          <Text style={styles.rankingUsername}>{user.userName}</Text>
           <Text style={styles.rankingTime}>{getDisplayValue(user)}</Text>
-          <TouchableOpacity style={styles.smallProfileButton}>
+          <TouchableOpacity style={styles.smallProfileButton} disabled={user.userName === 'None'}>
             <Text style={styles.smallProfileButtonText}>Profile</Text>
           </TouchableOpacity>
         </View>
       ))}
     </View>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.header}>Leaderboard</Text>
+        {renderTabs()}
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#fff' }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
