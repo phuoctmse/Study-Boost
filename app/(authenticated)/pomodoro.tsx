@@ -1,4 +1,5 @@
 import { getCurrentUser } from '@/api/auth';
+import { savePointToLeaderboard } from '@/api/leaderboard/leaderboard';
 import { getActivitiesByIds, getDailySessionsByIds, getStudySchedulesByUserId } from '@/api/study-schedule/study_schedule';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -88,7 +89,7 @@ const MOTIVATIONAL_QUOTES = [
 
 export default function Pomodoro() {
   // Settings
-  const [focus, setFocus] = useState(25);
+  const [focus, setFocus] = useState(1);
   const [breakTime, setBreakTime] = useState(5);
   const [longBreak, setLongBreak] = useState(15);
   const [selectedSoundName, setSelectedSoundName] = useState(SOUNDS[0].name);
@@ -96,6 +97,7 @@ export default function Pomodoro() {
 
   // Timer
   const [timerState, setTimerState] = useState(TIMER_STATES.FOCUS);
+  const [showTimeModal, setShowTimeModal] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(focus * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [round, setRound] = useState(1);
@@ -167,17 +169,17 @@ export default function Pomodoro() {
         await sound.unloadAsync();
       }
       const { sound: newSound } = await Audio.Sound.createAsync(
-        MUSIC_INFO[musicIndex].file, 
+        MUSIC_INFO[musicIndex].file,
         { shouldPlay: true, isLooping: true }
       );
       setSound(newSound);
-      
+
       // Get duration and set up position tracking
       const status = await newSound.getStatusAsync();
       if (status.isLoaded) {
         setMusicDuration(status.durationMillis || 0);
       }
-      
+
       // Update position every second
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded) {
@@ -261,11 +263,23 @@ export default function Pomodoro() {
       body: 'Đã đến lúc nghỉ ngơi hoặc chuyển sang hoạt động tiếp theo.',
       secondsFromNow: 0,
     });
+
+    // Award points to leaderboard
+    try {
+      const user = await getCurrentUser();
+      await savePointToLeaderboard(user.$id);
+    } catch (err) {
+      console.error('Failed to update leaderboard:', err);
+    }
+
     if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length - 1) {
       setCurrentActivityIndex((idx) => idx + 1);
+      // Reset timer to next activity's duration
+      setSecondsLeft(todayActivities[currentActivityIndex + 1].duration_minutes * 60);
       setIsRunning(false);
     } else {
-      // fallback to old logic if no more activities
+      // No more activities: reset to default focus time
+      setSecondsLeft(focus * 60);
       setIsRunning(false);
     }
   };
@@ -437,22 +451,22 @@ export default function Pomodoro() {
             <Ionicons name="close" size={24} color="#fff" />
           </TouchableOpacity>
           <Image source={MUSIC_INFO[musicIndex].cover} style={styles.musicCover} />
-          
+
           {/* Music Slider */}
           <View style={styles.musicSliderContainer}>
             <View style={styles.musicProgressBar}>
-              <View 
+              <View
                 style={[
-                  styles.musicProgressFill, 
+                  styles.musicProgressFill,
                   { width: `${musicDuration ? (musicPosition / musicDuration) * 100 : 0}%` }
-                ]} 
+                ]}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
-                  styles.musicSliderThumb, 
+                  styles.musicSliderThumb,
                   { left: `${musicDuration ? (musicPosition / musicDuration) * 100 : 0}%` }
                 ]}
-                onPress={() => {}}
+                onPress={() => { }}
               />
             </View>
             <View style={styles.musicTimeContainer}>
@@ -566,6 +580,78 @@ export default function Pomodoro() {
         </TouchableOpacity>
         <Text style={styles.quote}>{quote}</Text>
         <Info />
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#FCC89B',
+            borderRadius: 16,
+            paddingVertical: 10,
+            paddingHorizontal: 24,
+            marginTop: 18,
+            alignSelf: 'center'
+          }}
+          onPress={() => setShowTimeModal(true)}
+        >
+          <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 16 }}>Đổi thời gian</Text>
+        </TouchableOpacity>
+        <Modal visible={showTimeModal} transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, width: 320, alignItems: 'center' }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#737AA8', marginBottom: 24, textAlign: 'center' }}>
+                Đổi thời gian tập trung
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                <TouchableOpacity
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: focus > 5 ? '#E6E7F4' : '#F3F3F3',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 18,
+                    opacity: focus > 5 ? 1 : 0.5,
+                  }}
+                  disabled={focus <= 5}
+                  onPress={() => setFocus((prev) => Math.max(5, prev - 5))}
+                >
+                  <Ionicons name="chevron-back" size={28} color="#737AA8" />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#353859', minWidth: 70, textAlign: 'center' }}>
+                  {focus} phút
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: focus < 180 ? '#E6E7F4' : '#F3F3F3',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 18,
+                    opacity: focus < 180 ? 1 : 0.5,
+                  }}
+                  disabled={focus >= 180}
+                  onPress={() => setFocus((prev) => Math.min(180, prev + 5))}
+                >
+                  <Ionicons name="chevron-forward" size={28} color="#737AA8" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#FCC89B',
+                  borderRadius: 16,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  marginTop: 8,
+                  width: '100%',
+                }}
+                onPress={() => setShowTimeModal(false)}
+              >
+                <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 16 }}>Xong</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ImageBackground>
   );
@@ -583,7 +669,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 32,
+    paddingTop: 20,
   },
   timerHeaderMinimal: {
     flexDirection: 'row',
@@ -624,7 +710,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 10,
     shadowColor: '#737AA8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
@@ -637,37 +723,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  settingsCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 24,
-    width: 320,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    alignItems: 'center',
-  },
-  settingsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-    width: '100%',
-  },
-  settingsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  sectionLabel: {
-    fontSize: 14,
-    color: '#AAA',
-    marginTop: 18,
-    marginBottom: 8,
-    alignSelf: 'flex-start',
   },
   settingRow: {
     flexDirection: 'row',
@@ -730,7 +785,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   quote: {
-    marginTop: 24,
+    marginTop: 10,
     fontSize: 20,
     color: '#F8BB84',
     textAlign: 'center',
@@ -858,26 +913,5 @@ const styles = StyleSheet.create({
   musicTime: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-  },
-  backgroundOption: {
-    backgroundColor: '#F3F3F3',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginVertical: 8,
-    width: '100%',
-    alignItems: 'center',
-  },
-  backgroundOptionActive: {
-    backgroundColor: '#737AA8',
-  },
-  backgroundText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  backgroundTextActive: {
-    color: '#FFF',
-    fontWeight: 'bold',
   },
 });
