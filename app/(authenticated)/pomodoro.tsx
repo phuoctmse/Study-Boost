@@ -1,10 +1,14 @@
 import { getCurrentUser } from '@/api/auth';
+import { getUserScoreAndStreak, savePointToLeaderboard, updateDailyStreak } from '@/api/leaderboard/leaderboard';
 import { getActivitiesByIds, getDailySessionsByIds, getStudySchedulesByUserId } from '@/api/study-schedule/study_schedule';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import BackgroundPickerModal from '../../components/BackgroundPickerModal';
+import CongratulationModal from '../../components/CongratulationModal';
+import MusicPlayerModal from '../../components/MusicPlayerModal';
 import { schedulePomodoroNotification, setupAndroidNotificationChannel } from '../../components/NotificationHelper';
 
 const SOUNDS = [
@@ -88,7 +92,7 @@ const MOTIVATIONAL_QUOTES = [
 
 export default function Pomodoro() {
   // Settings
-  const [focus, setFocus] = useState(25);
+  const [focus, setFocus] = useState(1);
   const [breakTime, setBreakTime] = useState(5);
   const [longBreak, setLongBreak] = useState(15);
   const [selectedSoundName, setSelectedSoundName] = useState(SOUNDS[0].name);
@@ -96,6 +100,7 @@ export default function Pomodoro() {
 
   // Timer
   const [timerState, setTimerState] = useState(TIMER_STATES.FOCUS);
+  const [showTimeModal, setShowTimeModal] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(focus * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [round, setRound] = useState(1);
@@ -115,6 +120,8 @@ export default function Pomodoro() {
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
   const [activityLoading, setActivityLoading] = useState(true);
   const [showAllActivitiesModal, setShowAllActivitiesModal] = useState(false);
+  const [showCongrats, setShowCongrats] = useState(false);
+  const [userStreak, setUserStreak] = useState(0);
 
   // Update timer when settings change
   useEffect(() => {
@@ -167,17 +174,17 @@ export default function Pomodoro() {
         await sound.unloadAsync();
       }
       const { sound: newSound } = await Audio.Sound.createAsync(
-        MUSIC_INFO[musicIndex].file, 
+        MUSIC_INFO[musicIndex].file,
         { shouldPlay: true, isLooping: true }
       );
       setSound(newSound);
-      
+
       // Get duration and set up position tracking
       const status = await newSound.getStatusAsync();
       if (status.isLoaded) {
         setMusicDuration(status.durationMillis || 0);
       }
-      
+
       // Update position every second
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded) {
@@ -241,6 +248,20 @@ export default function Pomodoro() {
     fetchTodayActivities();
   }, []);
 
+  // Fetch streak on mount
+  useEffect(() => {
+    const fetchStreak = async () => {
+      try {
+        const user = await getCurrentUser();
+        const { streak } = await getUserScoreAndStreak(user.$id);
+        setUserStreak(streak);
+      } catch {
+        setUserStreak(0);
+      }
+    };
+    fetchStreak();
+  }, []);
+
   // When currentActivityIndex changes, update timer duration
   useEffect(() => {
     if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length) {
@@ -261,11 +282,25 @@ export default function Pomodoro() {
       body: 'Đã đến lúc nghỉ ngơi hoặc chuyển sang hoạt động tiếp theo.',
       secondsFromNow: 0,
     });
+
+    try {
+      const user = await getCurrentUser();
+      await updateDailyStreak(user.$id);
+      await savePointToLeaderboard(user.$id, user.name);
+      // Refresh streak after update
+      const { streak } = await getUserScoreAndStreak(user.$id);
+      setUserStreak(streak);
+      setShowCongrats(true); // Show modal
+    } catch (err) {
+      console.error('Failed to update leaderboard or streak:', err);
+    }
+
     if (todayActivities.length > 0 && currentActivityIndex < todayActivities.length - 1) {
       setCurrentActivityIndex((idx) => idx + 1);
+      setSecondsLeft(todayActivities[currentActivityIndex + 1].duration_minutes * 60);
       setIsRunning(false);
     } else {
-      // fallback to old logic if no more activities
+      setSecondsLeft(focus * 60);
       setIsRunning(false);
     }
   };
@@ -283,14 +318,6 @@ export default function Pomodoro() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handleSliderValueChange = async (value: number) => {
-    if (sound) {
-      const newPosition = value * musicDuration;
-      await sound.setPositionAsync(newPosition);
-      setMusicPosition(newPosition);
-    }
-  };
-
   // Progress for circular timer
   const getProgress = () => {
     let total;
@@ -306,178 +333,92 @@ export default function Pomodoro() {
 
   // Info: subject and study time left, plus today's activities
   const Info = () => (
-    <View style={styles.infoCard}>
-      {/* Today's activities */}
-      <View style={{ marginTop: 18, width: '100%' }}>
-        <Text style={{ fontWeight: 'bold', color: '#737AA8', fontSize: 16, marginBottom: 8 }}>Hoạt động hôm nay</Text>
-        {activityLoading ? (
-          <Text style={{ color: '#737AA8' }}>Đang tải hoạt động...</Text>
-        ) : todayActivities.length === 0 ? (
-          <Text style={{ color: '#737AA8' }}>Không có hoạt động nào cho hôm nay.</Text>
-        ) : (
-          <>
-            <View key={todayActivities[currentActivityIndex].$id} style={{ backgroundColor: '#FCC89B', borderRadius: 12, padding: 12, marginBottom: 8 }}>
-              <Text style={{ fontWeight: 'bold', color: '#353859', fontSize: 15 }}>{todayActivities[currentActivityIndex].name}</Text>
-              <Text style={{ color: '#353859', fontSize: 14, marginTop: 2 }}>{todayActivities[currentActivityIndex].description}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
-                {(todayActivities[currentActivityIndex].techniques || []).map((tech: string, i: number) => (
-                  <View key={i} style={{ backgroundColor: '#E6E7F4', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, marginRight: 6, marginBottom: 4 }}>
-                    <Text style={{ color: '#737AA8', fontSize: 13 }}>{tech}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={{ color: '#737AA8', fontSize: 13, marginTop: 4 }}>Thời lượng: {todayActivities[currentActivityIndex].duration_minutes} phút</Text>
-            </View>
-            <TouchableOpacity
-              style={{ alignItems: 'center', marginTop: 6 }}
-              activeOpacity={0.8}
-              onPress={() => setShowAllActivitiesModal(true)}
-            >
-              <Ionicons
-                name={'chevron-down'}
-                size={22}
-                color="#737AA8"
-              />
-              <Text style={{ color: '#737AA8', fontSize: 13, marginTop: 2 }}>
-                Xem tất cả hoạt động
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+  <View style={styles.infoCard}>
+    {/* Header row: Title + Streak Button */}
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
+      <Text style={{ fontWeight: 'bold', color: '#737AA8', fontSize: 17 }}>Hoạt động hôm nay</Text>
+      <TouchableOpacity
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#FCC89B',
+          borderRadius: 16,
+          paddingVertical: 6,
+          paddingHorizontal: 16,
+          marginLeft: 8,
+        }}
+        activeOpacity={0.85}
+        // onPress={() => {}} // Add streak history modal here if needed
+      >
+        <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 15, marginRight: 6 }}>
+          Streak: {userStreak}
+        </Text>
+        <Ionicons name="flame" size={20} color="#FF9800" />
+      </TouchableOpacity>
     </View>
-  );
 
-  // Settings pickers
-  const renderPicker = (label: string, value: number, setValue: (v: number) => void, options: number[]) => (
-    <View style={styles.settingRow}>
-      <Text style={styles.settingLabel}>{label}</Text>
-      <View style={styles.optionsWrap}>
-        {options.map((opt) => (
-          <TouchableOpacity
-            key={opt}
-            style={[styles.pickerOption, value === opt && styles.pickerOptionActive]}
-            onPress={() => setValue(opt)}
-          >
-            <Text style={[styles.pickerOptionText, value === opt && styles.pickerOptionTextActive]}>{opt} min</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-
-  // Sound picker
-  const renderSoundPicker = () => (
-    <View style={styles.soundRow}>
-      {SOUNDS.map((s) => (
-        <TouchableOpacity
-          key={s.name}
-          style={[styles.soundOption, selectedSoundName === s.name && styles.soundOptionActive]}
-          onPress={() => setSelectedSoundName(s.name)}
+    {/* Activities */}
+    {activityLoading ? (
+      <Text style={{ color: '#737AA8', marginTop: 10 }}>Đang tải hoạt động...</Text>
+    ) : todayActivities.length === 0 ? (
+      <Text style={{ color: '#737AA8', marginTop: 10 }}>Không có hoạt động nào cho hôm nay.</Text>
+    ) : (
+      <>
+        <View
+          key={todayActivities[currentActivityIndex].$id}
+          style={{
+            backgroundColor: '#FFE7D1',
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: 10,
+            shadowColor: '#FCC89B',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 6,
+            elevation: 2,
+          }}
         >
-          <Ionicons name={s.icon as any} size={22} color={selectedSoundName === s.name ? '#737AA8' : '#AAA'} />
-          <Text style={[styles.soundText, selectedSoundName === s.name && { color: '#737AA8' }]}>{s.name}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  // Background modal
-  const renderBgModal = () => (
-    <Modal visible={showBgModal} animationType="slide" transparent>
-      <View style={styles.modalBg}>
-        <View style={{ backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: 370, alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18, width: '100%', justifyContent: 'space-between' }}>
-            <TouchableOpacity onPress={() => setShowBgModal(false)}>
-              <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>Chọn hình nền</Text>
-            <View style={{ width: 24 }} />
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 10 }}>
-            {BACKGROUND_IMAGES.map((img, index) => (
-              <TouchableOpacity
-                key={index}
+          <Text style={{ fontWeight: 'bold', color: '#353859', fontSize: 15, marginBottom: 2 }}>
+            {todayActivities[currentActivityIndex].name}
+          </Text>
+          <Text style={{ color: '#353859', fontSize: 14, marginBottom: 6 }}>
+            {todayActivities[currentActivityIndex].description}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 6 }}>
+            {(todayActivities[currentActivityIndex].techniques || []).map((tech: string, i: number) => (
+              <View
+                key={i}
                 style={{
-                  marginHorizontal: 10,
-                  borderRadius: 32,
-                  borderWidth: bgIndex === index ? 4 : 0,
-                  borderColor: bgIndex === index ? '#737AA8' : 'transparent',
-                  overflow: 'hidden',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 10,
-                  elevation: 4,
+                  backgroundColor: '#E6E7F4',
+                  borderRadius: 10,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  marginRight: 6,
+                  marginBottom: 4,
                 }}
-                onPress={() => {
-                  setBgIndex(index);
-                  setShowBgModal(false);
-                }}
-                activeOpacity={0.85}
               >
-                <Image
-                  source={img}
-                  style={{ width: 160, height: 340, resizeMode: 'cover' }}
-                />
-              </TouchableOpacity>
+                <Text style={{ color: '#737AA8', fontSize: 13 }}>{tech}</Text>
+              </View>
             ))}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  // Music modal (music player style)
-  const renderMusicModal = () => (
-    <Modal visible={showMusicModal} animationType="slide" transparent>
-      <View style={styles.modalBg}>
-        <View style={styles.musicPlayerContainer}>
-          <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 16 }} onPress={() => setShowMusicModal(false)}>
-            <Ionicons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Image source={MUSIC_INFO[musicIndex].cover} style={styles.musicCover} />
-          
-          {/* Music Slider */}
-          <View style={styles.musicSliderContainer}>
-            <View style={styles.musicProgressBar}>
-              <View 
-                style={[
-                  styles.musicProgressFill, 
-                  { width: `${musicDuration ? (musicPosition / musicDuration) * 100 : 0}%` }
-                ]} 
-              />
-              <TouchableOpacity 
-                style={[
-                  styles.musicSliderThumb, 
-                  { left: `${musicDuration ? (musicPosition / musicDuration) * 100 : 0}%` }
-                ]}
-                onPress={() => {}}
-              />
-            </View>
-            <View style={styles.musicTimeContainer}>
-              <Text style={styles.musicTime}>{formatMusicTime(musicPosition)}</Text>
-              <Text style={styles.musicTime}>{formatMusicTime(musicDuration)}</Text>
-            </View>
           </View>
-
-          <Text style={styles.musicTitle}>{MUSIC_INFO[musicIndex].title}</Text>
-          <Text style={styles.musicArtist}>{MUSIC_INFO[musicIndex].artist}</Text>
-          <View style={styles.musicControlsRow}>
-            <TouchableOpacity onPress={() => setMusicIndex((i) => (i - 1 + MUSIC_INFO.length) % MUSIC_INFO.length)}>
-              <Ionicons name="play-skip-back" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsRunning((r) => !r)} style={styles.musicPlayButton}>
-              <Ionicons name={isRunning ? 'pause' : 'play'} size={28} color="#333" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setMusicIndex((i) => (i + 1) % MUSIC_INFO.length)}>
-              <Ionicons name="play-skip-forward" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
+          <Text style={{ color: '#737AA8', fontSize: 13 }}>
+            Thời lượng: {todayActivities[currentActivityIndex].duration_minutes} phút
+          </Text>
         </View>
-      </View>
-    </Modal>
-  );
+        <TouchableOpacity
+          style={{ alignItems: 'center', marginTop: 2 }}
+          activeOpacity={0.8}
+          onPress={() => setShowAllActivitiesModal(true)}
+        >
+          <Ionicons name={'chevron-down'} size={22} color="#737AA8" />
+          <Text style={{ color: '#737AA8', fontSize: 13, marginTop: 2 }}>
+            Xem tất cả hoạt động
+          </Text>
+        </TouchableOpacity>
+      </>
+    )}
+  </View>
+);
 
   // Modal to show all activities
   const renderAllActivitiesModal = () => (
@@ -520,8 +461,25 @@ export default function Pomodoro() {
   // Main render
   return (
     <ImageBackground source={BACKGROUND_IMAGES[bgIndex]} style={styles.bg} resizeMode="cover">
-      {renderBgModal()}
-      {renderMusicModal()}
+      <BackgroundPickerModal
+        visible={showBgModal}
+        onClose={() => setShowBgModal(false)}
+        backgrounds={BACKGROUND_IMAGES}
+        selectedIndex={bgIndex}
+        onSelect={setBgIndex}
+      />
+      <MusicPlayerModal
+        visible={showMusicModal}
+        onClose={() => setShowMusicModal(false)}
+        musicInfo={MUSIC_INFO}
+        musicIndex={musicIndex}
+        setMusicIndex={setMusicIndex}
+        isRunning={isRunning}
+        setIsRunning={setIsRunning}
+        musicPosition={musicPosition}
+        musicDuration={musicDuration}
+        formatMusicTime={formatMusicTime}
+      />
       {renderAllActivitiesModal()}
       <View style={styles.timerScreen}>
         <View style={styles.timerHeaderMinimal}>
@@ -566,7 +524,80 @@ export default function Pomodoro() {
         </TouchableOpacity>
         <Text style={styles.quote}>{quote}</Text>
         <Info />
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#FCC89B',
+            borderRadius: 16,
+            paddingVertical: 10,
+            paddingHorizontal: 24,
+            marginTop: 18,
+            alignSelf: 'center'
+          }}
+          onPress={() => setShowTimeModal(true)}
+        >
+          <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 16 }}>Điều chỉnh thời gian</Text>
+        </TouchableOpacity>
+        <Modal visible={showTimeModal} transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, width: 320, alignItems: 'center' }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#737AA8', marginBottom: 24, textAlign: 'center' }}>
+                Đổi thời gian tập trung
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                <TouchableOpacity
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: focus > 5 ? '#E6E7F4' : '#F3F3F3',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 18,
+                    opacity: focus > 5 ? 1 : 0.5,
+                  }}
+                  disabled={focus <= 1}
+                  onPress={() => setFocus((prev) => Math.max(1, prev - 1))}
+                >
+                  <Ionicons name="chevron-back" size={28} color="#737AA8" />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#353859', minWidth: 70, textAlign: 'center' }}>
+                  {focus} phút
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: focus < 180 ? '#E6E7F4' : '#F3F3F3',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 18,
+                    opacity: focus < 180 ? 1 : 0.5,
+                  }}
+                  disabled={focus >= 180}
+                  onPress={() => setFocus((prev) => Math.min(180, prev + 1))}
+                >
+                  <Ionicons name="chevron-forward" size={28} color="#737AA8" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#FCC89B',
+                  borderRadius: 16,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  marginTop: 8,
+                  width: '100%',
+                }}
+                onPress={() => setShowTimeModal(false)}
+              >
+                <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 16 }}>Xong</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
+      <CongratulationModal visible={showCongrats} onClose={() => setShowCongrats(false)} />
     </ImageBackground>
   );
 }
@@ -583,7 +614,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 32,
+    paddingTop: 20,
   },
   timerHeaderMinimal: {
     flexDirection: 'row',
@@ -624,7 +655,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 10,
     shadowColor: '#737AA8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
@@ -637,37 +668,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  settingsCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 24,
-    width: 320,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    alignItems: 'center',
-  },
-  settingsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-    width: '100%',
-  },
-  settingsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  sectionLabel: {
-    fontSize: 14,
-    color: '#AAA',
-    marginTop: 18,
-    marginBottom: 8,
-    alignSelf: 'flex-start',
   },
   settingRow: {
     flexDirection: 'row',
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   quote: {
-    marginTop: 24,
+    marginTop: 10,
     fontSize: 20,
     color: '#F8BB84',
     textAlign: 'center',
@@ -858,26 +858,5 @@ const styles = StyleSheet.create({
   musicTime: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-  },
-  backgroundOption: {
-    backgroundColor: '#F3F3F3',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginVertical: 8,
-    width: '100%',
-    alignItems: 'center',
-  },
-  backgroundOptionActive: {
-    backgroundColor: '#737AA8',
-  },
-  backgroundText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  backgroundTextActive: {
-    color: '#FFF',
-    fontWeight: 'bold',
   },
 });
