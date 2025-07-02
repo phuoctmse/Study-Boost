@@ -37,7 +37,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -45,8 +47,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "58b3a385-3392-4349-a0e2-ae5fdfa35ffe"
+        "projectId": "a455fa56-e3b6-439c-9dbd-cb29250f2561"
       }
-    }
+    },
+    "owner": "clone222"
   }
 }

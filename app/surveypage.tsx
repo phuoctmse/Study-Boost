@@ -242,7 +242,7 @@ export default function Survey() {
 
   if (isSaving) {
     return (
-      <LoadingSurvey loading={true} message="Chờ AI tạo lịch học cá nhân cho bạn" />
+      <LoadingSurvey loading={true} message="Chờ AI tạo lịch học cho bạn" />
     );
   }
 

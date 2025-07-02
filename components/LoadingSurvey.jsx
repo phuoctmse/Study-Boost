@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   dot: {
     fontSize: 28,
-    color: '#FCC89B',
+    color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 2,
   },

@@ -125,10 +125,12 @@ export default function Pomodoro() {
 
   // Update timer when settings change
   useEffect(() => {
-    if (timerState === TIMER_STATES.FOCUS) setSecondsLeft(focus * 60);
-    if (timerState === TIMER_STATES.BREAK) setSecondsLeft(breakTime * 60);
-    if (timerState === TIMER_STATES.LONG_BREAK) setSecondsLeft(longBreak * 60);
-  }, [focus, breakTime, longBreak, timerState]);
+    if (!isRunning) {
+      if (timerState === TIMER_STATES.FOCUS) setSecondsLeft(focus * 60);
+      if (timerState === TIMER_STATES.BREAK) setSecondsLeft(breakTime * 60);
+      if (timerState === TIMER_STATES.LONG_BREAK) setSecondsLeft(longBreak * 60);
+    }
+  }, [focus, breakTime, longBreak, timerState, isRunning]);
 
   // Timer logic (decrement both timer and studyLeft if running and in FOCUS)
   useEffect(() => {
@@ -589,7 +591,11 @@ export default function Pomodoro() {
                   marginTop: 8,
                   width: '100%',
                 }}
-                onPress={() => setShowTimeModal(false)}
+                onPress={() => {
+                  setIsRunning(false);
+                  setSecondsLeft(focus * 60);
+                  setShowTimeModal(false);
+                }}
               >
                 <Text style={{ color: '#353859', fontWeight: 'bold', fontSize: 16 }}>Xong</Text>
               </TouchableOpacity>
