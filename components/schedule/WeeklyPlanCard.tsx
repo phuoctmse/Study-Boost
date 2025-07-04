@@ -32,7 +32,18 @@ export const WeeklyPlanCard: React.FC<WeeklyPlanCardProps> = ({
     );
   }
 
-  const currentPlan = weeklyPlans.find(plan => plan.week === 1) || weeklyPlans[0];
+  // Calculate current week number based on 'created' of the first plan
+  function getCurrentWeekNumber(startDate: string): number {
+    const start = new Date(startDate);
+    const now = new Date();
+    const diffInMs = now.getTime() - start.getTime();
+    const diffInWeeks = Math.floor(diffInMs / (7 * 24 * 60 * 60 * 1000));
+    return diffInWeeks + 1; // +1 because week numbers are usually 1-based
+  }
+
+  const firstPlan = weeklyPlans[0] as WeeklyPlan & { created: string };
+const currentWeekNumber = getCurrentWeekNumber(firstPlan.created);
+const currentPlan = weeklyPlans.find(plan => plan.week === currentWeekNumber) || firstPlan;
 
   return (
     <TouchableOpacity

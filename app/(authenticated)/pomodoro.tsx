@@ -39,34 +39,6 @@ const MUSIC_INFO = [
     cover: require('../../assets/images/background-3.jpg'),
     duration: 233,
   },
-  {
-    title: 'Better Day',
-    artist: 'penguinmusic',
-    file: require('../../assets/music/music-4.mp3'),
-    cover: require('../../assets/images/background-4.jpg'),
-    duration: 195,
-  },
-  {
-    title: 'Easy Lifestyle',
-    artist: 'music_for_video',
-    file: require('../../assets/music/music-5.mp3'),
-    cover: require('../../assets/images/background-5.jpg'),
-    duration: 300,
-  },
-  {
-    title: 'Coffee Chill Out',
-    artist: 'RomanBelov',
-    file: require('../../assets/music/music-6.mp3'),
-    cover: require('../../assets/images/background-6.jpg'),
-    duration: 113,
-  },
-  {
-    title: 'Tasty - Chill Lofi Vibe',
-    artist: 'FASSounds',
-    file: require('../../assets/music/music-7.mp3'),
-    cover: require('../../assets/images/background-7.jpg'),
-    duration: 133,
-  },
 ];
 const TIMER_STATES = {
   FOCUS: 'FOCUS',
@@ -77,10 +49,6 @@ const BACKGROUND_IMAGES = [
   require('../../assets/images/background-1.jpg'),
   require('../../assets/images/background-2.jpg'),
   require('../../assets/images/background-3.jpg'),
-  require('../../assets/images/background-4.jpg'),
-  require('../../assets/images/background-5.jpg'),
-  require('../../assets/images/background-6.jpg'),
-  require('../../assets/images/background-7.jpg'),
 ];
 const MOTIVATIONAL_QUOTES = [
   'Giữ vững tập trung và đừng bao giờ bỏ cuộc!',

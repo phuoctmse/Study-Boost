@@ -1,22 +1,55 @@
 import { getCurrentUser } from '@/api/auth';
+import { getPackages } from '@/api/package/package';
+import { Package } from '@/types/package';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PremiumPage = () => {
   const router = useRouter();
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handlePurchase = async () => {
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const res = await getPackages();
+        // Map Appwrite documents to Package type
+        const pkgs = (res.documents || []).map((doc: any) => ({
+          id: doc.$id || doc.id,
+          name: doc.name,
+          price: doc.price,
+          duration: doc.duration,
+          description: doc.description,
+        }));
+        setPackages(pkgs);
+      } catch (e) {
+        setPackages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPackages();
+  }, []);
+
+  const handlePurchase = async (pkg: Package) => {
+    console.log('Selected package:', pkg);
     try {
       const user = await getCurrentUser();
       if (!user) {
         router.push('/login');
         return;
       }
-      // Navigate to payment-process page instead of opening a URL
-      router.push('/payment-process');
+      // Pass package id and price to payment-process using query string
+      router.push({
+        pathname: '/payment-process',
+        params: {
+          price: pkg.price,
+          packageId: pkg.id,
+        },
+      });
     } catch (error) {
       console.error('Purchase error:', error);
       Alert.alert(
@@ -30,130 +63,79 @@ const PremiumPage = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>      
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Chọn gói học</Text>
         <Text style={styles.subtitle}>
           Dù bạn chọn gói nào, hãy trải nghiệm miễn phí cho đến khi bạn thực sự yêu thích việc học!
         </Text>
-
-        <View style={styles.plansContainerVertical}>
-          {/* Default Plan */}
-          <View style={styles.planCard}>
-            <View style={styles.planHeader}>
-              <View style={styles.planTitleContainer}>
-                <Text style={styles.planTitleEmoji}>🆓</Text>
-                <Text style={styles.planTitle}>Miễn phí (Gói mặc định)</Text>
+        {loading ? (
+          <Text style={{ textAlign: 'center', marginTop: 30 }}>Đang tải gói...</Text>
+        ) : (
+          <View style={styles.plansContainerVertical}>
+            {packages.map((pkg, idx) => (
+              <View key={pkg.id || idx} style={[styles.planCard, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumCard]}>
+                {pkg.name.toLowerCase() === 'student' && (
+                  <View style={styles.popularTag}>
+                    <Text style={styles.popularText}>Phổ biến nhất</Text>
+                  </View>
+                )}
+                <View style={styles.planHeader}>
+                  <View style={styles.planTitleContainer}>
+                    <Text style={[styles.planTitleEmoji, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumEmoji]}>{pkg.name.toLowerCase() === 'miễn phí' ? '🆓' : '🏅'}</Text>
+                    <Text style={[styles.planTitle, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumTitle]}>{pkg.name}</Text>
+                  </View>
+                  <Text style={[styles.planPrice, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumPrice]}>
+                    <Text style={pkg.name.toLowerCase() !== 'miễn phí' ? styles.priceAmount2 : styles.priceAmount}>
+                      {pkg.price === null || pkg.price === undefined
+                        ? 'Liên hệ công ty'
+                        : pkg.price === 0
+                          ? '0đ'
+                          : `${Number(pkg.price).toLocaleString()} VNĐ`}
+                    </Text>
+                    {(pkg.price !== null && pkg.price !== undefined) && (
+                      <Text style={pkg.name.toLowerCase() !== 'miễn phí' ? styles.pricePeriod2 : styles.pricePeriod}>/tháng</Text>
+                    )}
+                  </Text>
+                </View>
+                <View style={styles.featuresContainer}>
+                  {(Array.isArray(pkg.description)
+                    ? pkg.description
+                    : pkg.description.split(/\n|\r|\r\n|,|\u2028|\u2029|\n/g).map(item => item.trim()).filter(Boolean)
+                  ).map((desc, i) => (
+                    <View key={i} style={styles.featureItem}>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={pkg.name.toLowerCase() !== 'miễn phí' ? '#fff' : '#353859'} style={{marginRight: 6}} />
+                      <Text style={[styles.featureText, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumFeatureText]}>{desc}</Text>
+                    </View>
+                  ))}
+                </View>
+                {pkg.name.trim().toLowerCase() === 'dài hạn' ? (
+                  <TouchableOpacity
+                    style={styles.purchaseButton}
+                    onPress={() => {
+                      Linking.openURL('https://www.facebook.com/profile.php?id=61576085227183');
+                    }}
+                  >
+                    <Text style={styles.purchaseButtonText}>Liên hệ</Text>
+                  </TouchableOpacity>
+                ) : (
+                  pkg.price === 0 ? (
+                    <TouchableOpacity style={styles.currentButton}>
+                      <Text style={styles.currentButtonText}>Đang sử dụng</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.purchaseButton}
+                      onPress={() => handlePurchase(pkg)}
+                    >
+                      <Text style={styles.purchaseButtonText}>Nâng cấp ngay</Text>
+                    </TouchableOpacity>
+                  )
+                )}
               </View>
-              <Text style={styles.planPrice}>
-                <Text style={styles.priceAmount}>0đ</Text>
-                <Text style={styles.pricePeriod}>/tháng</Text>
-              </Text>
-            </View>
-
-            <View style={styles.featuresContainer}>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Truy cập bộ thẻ ghi nhớ cơ bản</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Giới hạn số lượng câu hỏi mỗi ngày</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Theo dõi chuỗi ngày học cơ bản</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Nhắc nhở học tập cơ bản</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Giới hạn số lượng môn học</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Tham gia cộng đồng học tập</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Xem lịch sử tiến độ (7 ngày gần nhất)</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.currentButton}>
-              <Text style={styles.currentButtonText}>Đang sử dụng</Text>
-            </TouchableOpacity>
+            ))}
           </View>
-
-          {/* Students Plan */}
-          <View style={[styles.planCard, styles.premiumCard]}>
-            <View style={styles.popularTag}>
-              <Text style={styles.popularText}>Phổ biến nhất</Text>
-            </View>
-            <View style={styles.planHeader}>
-              <View style={styles.planTitleContainer}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji]}>🏅</Text>
-                <Text style={[styles.planTitle, styles.premiumTitle]}>Students</Text>
-              </View>
-              <Text style={[styles.planPrice, styles.premiumPrice]}>
-                <Text style={styles.priceAmount2}>150.000 VNĐ</Text>
-                <Text style={styles.pricePeriod2}>/tháng</Text>
-              </Text>
-            </View>
-
-            <View style={styles.featuresContainer}>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Tạo thẻ ghi nhớ không giới hạn</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Câu hỏi luyện tập do AI tạo ra</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Ôn tập thông minh (Lặp lại ngắt quãng)</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Truy cập bộ đề học nâng cao</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Học offline không cần mạng</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Phân tích hiệu suất nâng cao</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Tùy chỉnh kế hoạch học tập</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Hỗ trợ ưu tiên</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Không quảng cáo</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Trải nghiệm sớm các tính năng mới</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.purchaseButton}
-              onPress={handlePurchase}
-            >
-              <Text style={styles.purchaseButtonText}>Nâng cấp ngay</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

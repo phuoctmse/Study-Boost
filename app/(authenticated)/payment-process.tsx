@@ -3,39 +3,54 @@ import { getPackages } from '@/api/package/package';
 import { createPayment, getPaymentById } from '@/api/payment/payment';
 import { PaymentStatus } from '@/types/payment';
 import { useNavigation } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PaymentProcess() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const navigation = useNavigation<any>();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [errorMessage, setErrorMessage] = useState('');
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [packageInfo, setPackageInfo] = useState<any>(null);
+  const packageId = params.packageId as string | undefined;
+  const paramPrice = params.price ? Number(params.price) : undefined;
+  const [price, setPrice] = useState<number>(paramPrice || 150000);
 
   useEffect(() => {
     const startPayment = async () => {
       try {
         const user = await getCurrentUser();
         const packagesRes = await getPackages();
-        const studentPackage = packagesRes.documents.find((pkg: any) => pkg.name.toLowerCase() === 'student');
-        if (!studentPackage) {
-          setErrorMessage('Không tìm thấy gói Sinh viên.');
+        let selectedPackage = null;
+        if (packageId) {
+          selectedPackage = packagesRes.documents.find((pkg: any) => pkg.$id === packageId || pkg.id === packageId);
+        }
+        if (!selectedPackage) {
+          // fallback to student package for backward compatibility
+          selectedPackage = packagesRes.documents.find((pkg: any) => pkg.name.toLowerCase() === 'student');
+        }
+        if (!selectedPackage) {
+          setErrorMessage('Không tìm thấy gói đã chọn.');
           setStatus('error');
           return;
         }
+        setPackageInfo(selectedPackage);
+        const usedPrice = paramPrice || selectedPackage.price || 150000;
+        setPrice(usedPrice);
         const payment = await createPayment({
-          package_id: studentPackage.$id,
+          package_id: selectedPackage.$id || selectedPackage.id,
           user_id: user.$id,
           started_at: new Date(),
           ended_at: new Date(),
           status: PaymentStatus.Pending,
         });
         setPaymentId(payment.$id);
-        setQrCodeUrl(`https://qr.sepay.vn/img?acc=27202407&bank=ACB&amount=150000&des=SB${payment.$id}`);
+        setQrCodeUrl(`https://qr.sepay.vn/img?acc=27202407&bank=ACB&amount=${usedPrice}&des=SB${payment.$id}`);
         console.log(payment.$id);
       } catch (err) {
         setErrorMessage('Không thể khởi tạo thanh toán.');
@@ -43,7 +58,7 @@ export default function PaymentProcess() {
       }
     };
     startPayment();
-  }, []);
+  }, [packageId, paramPrice]);
 
   const checkSubscriptionStatus = async () => {
     try {
@@ -73,7 +88,7 @@ export default function PaymentProcess() {
         {status === 'processing' && (
           <>
             <Text style={styles.title}>Quét mã QR để thanh toán</Text>
-            <Text style={styles.amount}>150,000 VND</Text>
+            <Text style={styles.amount}>{price.toLocaleString()} VND</Text>
             {qrCodeUrl && (
               <Image 
                 source={{ uri: qrCodeUrl }} 
