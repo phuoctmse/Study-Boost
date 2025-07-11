@@ -75,6 +75,7 @@ export default function Index() {
     }
   };
 
+
   const handleNext = () => {
     if (currentSlideIndex < slides.length - 1) {
       Animated.parallel([
@@ -113,7 +114,6 @@ export default function Index() {
   const handleSkip = () => {
     router.push("/login");
   };
-
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -122,6 +122,7 @@ export default function Index() {
       </View>
     );
   }
+
 
   const getButtonText = () => {
     if (currentSlideIndex === slides.length - 1) {
@@ -141,12 +142,14 @@ export default function Index() {
             <View style={styles.loadingContainer}>
               <ActivityIndicator color="#4D4F75" size="large" />
               <Text style={styles.redirectText}>
+
                 Redirecting to Pomodoro Timer...
               </Text>
             </View>
           );
         })()
       ) : (
+
         // Onboarding slides
         <View style={styles.onboardingContainer}>
           {/* Header with progress and skip */}
@@ -200,6 +203,7 @@ export default function Index() {
                   style={styles.slideImage}
                   resizeMode="contain"
                 />
+
               </View>
 
               {/* Text section */}
@@ -243,6 +247,7 @@ export default function Index() {
               </TouchableOpacity>
             </View>
 
+
             {/* Page indicators */}
             <View style={styles.indicatorContainer}>
               {slides.map((_, index) => (
@@ -257,6 +262,7 @@ export default function Index() {
                   ]}
                 />
               ))}
+
             </View>
 
             {/* Bottom safe area */}
@@ -286,6 +292,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     fontSize: 16,
     fontWeight: '500',
+
   },
   container: {
     flex: 1,
