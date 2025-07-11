@@ -1,11 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
+import { getSurveyQuestions } from "@/api/survey/survey";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Dimensions,
   Image,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -16,17 +16,44 @@ import { Models } from "react-native-appwrite";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getCurrentUser, logout } from "../api/auth";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+const slides = [
+  {
+    id: '1',
+    image: require('../assets/images/QLTG.jpg'),
+    title: 'Quản lý thời gian',
+    description: 'Tối ưu hoá việc học tập với kỹ thuật Pomodoro'
+  },
+  {
+    id: '2',
+    image: require('../assets/images/DTTT.jpg'),
+    title: 'Đặt thời gian tập trung',
+    description: 'Tránh phân tâm và tạo thói quen học tập hiệu quả'
+  },
+  {
+    id: '3',
+    image: require('../assets/images/KNCDHT.jpg'),
+    title: 'Kết nối cộng đồng học tập',
+    description: 'Học tập cùng cộng đồng và chia sẻ thành tích'
+  },
+];
 
 export default function Index() {
   const [loggedInUser, setLoggedInUser] =
     useState<Models.User<Models.Preferences> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
       try {
         const user = await getCurrentUser();
+        console.log("Current User:", user);
+        console.log(isLoading);
         setLoggedInUser(user);
       } catch (error) {
         console.log("No active session");
@@ -36,6 +63,7 @@ export default function Index() {
     };
 
     checkSession();
+    getSurveyQuestions();
   }, []);
 
   const handleLogout = async () => {
@@ -47,152 +75,200 @@ export default function Index() {
     }
   };
 
+
+  const handleNext = () => {
+    if (currentSlideIndex < slides.length - 1) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -width,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentSlideIndex(currentSlideIndex + 1);
+        slideAnim.setValue(width);
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    } else {
+      // Last slide - navigate to login
+      router.push("/login");
+    }
+  };
+
+  const handleSkip = () => {
+    router.push("/login");
+  };
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
+        <ActivityIndicator color="#4D4F75" size="large" />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
+
+
+  const getButtonText = () => {
+    if (currentSlideIndex === slides.length - 1) {
+      return 'Get Started';
+    }
+    return 'Next';
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#737AA8" }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#737AA8" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       {loggedInUser ? (
         // If user is logged in, redirect to pomodoro page
         (() => {
-          // Ensure we're using replace to avoid back navigation issues
           setTimeout(() => router.replace("/pomodoro"), 100);
           return (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator color="#353859" size="large" />
-              <Text style={{ marginTop: 10 }}>
+              <ActivityIndicator color="#4D4F75" size="large" />
+              <Text style={styles.redirectText}>
+
                 Redirecting to Pomodoro Timer...
               </Text>
             </View>
           );
         })()
       ) : (
-        // User is not logged in - show homepage inspired by the web version
-        <>
-          <View style={styles.homeHeader}>
-            <View style={styles.titleContainer}>
-              <Image
-                source={require("../assets/images/icon.png")}
-                style={styles.headerIcon}
-                resizeMode="contain"
-              />
+
+        // Onboarding slides
+        <View style={styles.onboardingContainer}>
+          {/* Header with progress and skip */}
+          <View style={styles.header}>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressTrack}>
+                <Animated.View 
+                  style={[
+                    styles.progressBar,
+                    { 
+                      width: `${((currentSlideIndex + 1) / slides.length) * 100}%` 
+                    }
+                  ]} 
+                />
+              </View>
             </View>
-            <View style={styles.headerButtons}>
-              <TouchableOpacity
-                style={styles.headerLoginButton}
-                onPress={() => router.push("/login")}
-              >
-                <Text style={styles.headerLoginText}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.headerSignupButton}
-                onPress={() => router.push("/register")}
-              >
-                <Text style={styles.headerSignupText}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
+            
+            <TouchableOpacity 
+              style={styles.skipButton}
+              onPress={handleSkip}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={{ backgroundColor: "#f4f6f8" }}
-          >
-            {/* Hero Section */}
-            <View style={styles.heroSection}>
-              <View style={styles.heroContent}>
-                <View style={styles.heroTextContainer}>
-                  <Text style={styles.heroTitle}>
-                    Nâng cao hiệu quả{"\n"}
-                    học tập với{"\n"}
-                    AI &{"\n"}
-                    Gamification!
-                  </Text>
-                  <View style={styles.ctaButtons}>
-                    <TouchableOpacity style={styles.trialButton}>
-                      <Text style={styles.trialButtonText}>
-                        Dùng thử miễn phí
-                      </Text>
-                    </TouchableOpacity>
+          {/* Logo section */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../assets/images/icon.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
 
-                    <TouchableOpacity
-                      style={styles.registerButton}
-                      onPress={() => router.push("/register")}
-                    >
-                      <Text style={styles.registerButtonText}>
-                        Đăng ký ngay
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-            {/* Features Section */}
-            <View style={styles.featuresSection}>
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name="time-outline" size={40} color="#353859" />
-                </View>
-                <Text style={styles.featureTitle}>Quản lý thời gian</Text>
+          {/* Main content */}
+          <View style={styles.contentContainer}>
+            <Animated.View 
+              style={[
+                styles.slideContent, 
+                { 
+                  opacity: fadeAnim,
+                  transform: [{ translateX: slideAnim }]
+                }
+              ]}
+            >
+              {/* Image section */}
+              <View style={styles.imageSection}>
+                <Image
+                  source={slides[currentSlideIndex].image}
+                  style={styles.slideImage}
+                  resizeMode="contain"
+                />
+
               </View>
 
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name="eye-outline" size={40} color="#353859" />
-                </View>
-                <Text style={styles.featureTitle}>Duy trì tập trung</Text>
-              </View>
-
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name="people-outline" size={40} color="#353859" />
-                </View>
-                <Text style={styles.featureTitle}>Kết nối</Text>
-              </View>
-            </View>
-
-            {/* Laptop/App Preview Section */}
-            <View style={styles.laptopSection}>
-              <View style={styles.laptopContainer}>
-                <View style={styles.laptopScreen}>
-                  <Image
-                    source={require("../assets/images/icon.png")}
-                    style={[
-                      styles.appPreviewImage,
-                      { width: "70%", height: "70%" },
-                    ]}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.bottomCta}>
-                <Text style={styles.bottomCtaText}>
-                  Dùng thử miễn phí / Đăng ký ngay
+              {/* Text section */}
+              <View style={styles.textSection}>
+                <Text style={styles.slideTitle}>
+                  {slides[currentSlideIndex].title}
                 </Text>
-                <View style={styles.bottomCtaButtons}>
-                  <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={() => router.push("/login")}
-                  >
-                    <Text style={styles.loginButtonText}>Đăng nhập</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.registerButton, styles.bottomRegisterButton]}
-                    onPress={() => router.push("/register")}
-                  >
-                    <Text style={styles.registerButtonText}>Đăng ký</Text>
-                  </TouchableOpacity>
-                </View>
+                <Text style={styles.slideDescription}>
+                  {slides[currentSlideIndex].description}
+                </Text>
               </View>
+            </Animated.View>
+          </View>
+
+          {/* Bottom section */}
+          <View style={styles.bottomSection}>
+            {/* Action buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={styles.skipBottomButton}
+                onPress={handleSkip}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.skipBottomButtonText}>Skip</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.nextButton,
+                  currentSlideIndex === slides.length - 1 && styles.getStartedButton
+                ]}
+                onPress={handleNext}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.nextButtonText,
+                  currentSlideIndex === slides.length - 1 && styles.getStartedButtonText
+                ]}>
+                  {getButtonText()}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-        </>
+
+
+            {/* Page indicators */}
+            <View style={styles.indicatorContainer}>
+              {slides.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.indicator,
+                    {
+                      backgroundColor: index === currentSlideIndex ? '#4D4F75' : '#e5e7eb',
+                      width: index === currentSlideIndex ? 24 : 8,
+                    }
+                  ]}
+                />
+              ))}
+
+            </View>
+
+            {/* Bottom safe area */}
+            <View style={styles.bottomSafeArea} />
+          </View>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -203,311 +279,174 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#ffffff",
+  },
+  loadingText: {
+    marginTop: 16,
+    color: "#6b7280",
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  redirectText: {
+    marginTop: 16,
+    color: "#6b7280",
+    fontSize: 16,
+    fontWeight: '500',
+
   },
   container: {
     flex: 1,
-    // Removing backgroundColor here as we set it directly in the SafeAreaView
+    backgroundColor: "#ffffff",
+  },
+  onboardingContainer: {
+    flex: 1,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingTop: 8,
   },
-  homeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#737AA8",
+  progressContainer: {
+    flex: 1,
+    marginRight: 16,
   },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  progressTrack: {
+    height: 3,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 1.5,
+    overflow: 'hidden',
   },
-  headerIcon: {
-    width: 150,
-    height: 50,
-    marginRight: 10,
+  progressBar: {
+    height: '100%',
+    backgroundColor: "#4D4F75",
+    borderRadius: 1.5,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#353859",
-  },
-  headerButtons: {
-    flexDirection: "row",
-  },
-  headerLoginButton: {
+  skipButton: {
     paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    backgroundColor: "#fcc89b",
-    borderColor: "#fff",
-    marginRight: 10,
+    paddingHorizontal: 12,
   },
-  headerLoginText: {
-    color: "#fff",
-    fontWeight: "500",
-  },
-  headerSignupButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    backgroundColor: "#3a3b5c",
-  },
-  headerSignupText: {
-    color: "#fff",
-    fontWeight: "500",
+  skipText: {
+    fontSize: 16,
+    color: "#9ca3af",
+    fontWeight: '500',
   },
   contentContainer: {
     flex: 1,
+    paddingHorizontal: 24,
   },
-  scrollView: {
+  slideContent: {
     flex: 1,
-  },
-  // Hero Section
-  heroSection: {
-    backgroundColor: "#737AA8",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 100,
-    marginTop: 0, // Ensure no gap between header and hero section
-  },
-  heroContent: {
-    flexDirection: "column", // Column layout for mobile
-    alignItems: "center",
-  },
-  heroTextContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  heroTitle: {
-    fontSize: 38, // Increased from 32
-    fontWeight: "bold",
-    color: "#353859",
-    textAlign: "center",
-    marginBottom: 30,
-    lineHeight: 46, // Increased from 40
-  },
-  ctaButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    flexWrap: "wrap",
-  },
-  trialButton: {
-    backgroundColor: "#fcc89b",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
-    minWidth: 150,
-  },
-  trialButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  registerButton: {
-    backgroundColor: "#3a3b5c",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginBottom: 10,
-    minWidth: 150,
-  },
-  registerButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  heroImageContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  heroImage: {
-    width: 250, // Increased from 200
-    height: 250, // Increased from 200
-  },
-
-  // Features Section
-  featuresSection: {
-    flexDirection: "row", // Changed from 'column' to 'row'
-    flexWrap: "wrap", // Added to wrap items if needed
-    justifyContent: "space-between", // Added to distribute items evenly
-    padding: 30,
-    backgroundColor: "#fff",
-  },
-  featureCard: {
-    alignItems: "center",
-    marginBottom: 30,
-    width: "30%", // Added to make cards take up approximately 1/3 of the width
-  },
-  featureIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#353859",
-    textAlign: "center",
-  },
-
-  // Laptop Section
-  laptopSection: {
-    backgroundColor: "#7c7db8",
-    padding: 30,
-    alignItems: "center",
-  },
-  laptopContainer: {
-    width: "90%",
-    maxWidth: 350,
-    backgroundColor: "#222",
-    borderRadius: 20,
-    padding: 15,
-    paddingBottom: 0,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  laptopScreen: {
-    backgroundColor: "#e0e0e0",
-    borderRadius: 5,
-    aspectRatio: 16 / 10,
-    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
-  appPreviewImage: {
-    width: "50%",
-    height: "50%",
-  },
-  bottomCta: {
-    width: "100%",
-    alignItems: "center",
-    marginTop: 20,
-  },
-  bottomCtaText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  bottomCtaButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    flexWrap: "wrap",
-  },
-  loginButton: {
-    backgroundColor: "#fcc89b",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 20,
-    marginRight: 15,
-    marginBottom: 10,
-  },
-  loginButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  bottomRegisterButton: {
-    marginRight: 0,
-  },
-
-  // Logged in user styles
-  dashboardContainer: {
+  imageSection: {
     flex: 1,
-    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 20,
   },
-  welcomeCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    flexDirection: "row",
+  slideImage: {
+    width: width * 0.85,
+    height: width * 0.85,
+    maxHeight: 400,
+  },
+  textSection: {
     alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingBottom: 40,
+    paddingHorizontal: 16,
   },
-  welcomeText: {
-    fontSize: 18,
-    marginLeft: 15,
-    color: "#333",
+  slideTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 36,
   },
-  userName: {
-    fontWeight: "bold",
-    color: "#353859",
+  slideDescription: {
+    fontSize: 17,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 26,
+    fontWeight: '400',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 15,
-    color: "#333",
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
   },
-  quickActions: {
+  actionButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 32,
+    gap: 16,
   },
-  actionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 15,
+  skipBottomButton: {
+    flex: 1,
+    backgroundColor: "#f3f4f6",
+    paddingVertical: 16,
+    borderRadius: 28,
     alignItems: "center",
-    width: "30%",
+    justifyContent: 'center',
+  },
+  skipBottomButtonText: {
+    fontSize: 17,
+    color: "#374151",
+    fontWeight: "600",
+  },
+  nextButton: {
+    flex: 1,
+    backgroundColor: "#4D4F75",
+    paddingVertical: 16,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: 'center',
+  },
+  nextButtonText: {
+    fontSize: 17,
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+  getStartedButton: {
+    backgroundColor: "#FCC89B",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  actionText: {
-    marginTop: 10,
-    color: "#333",
-    fontWeight: "500",
+  getStartedButtonText: {
+    fontSize: 18,
+    color: "#4D4F75",
+    fontWeight: "700",
   },
-  studyTips: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  indicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#353859",
+  indicator: {
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
-  tipText: {
-    color: "#555",
-    lineHeight: 22,
+  bottomSafeArea: {
+    height: 16,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  logo: {
+    width: 120,
+    height: 80,
   },
 });

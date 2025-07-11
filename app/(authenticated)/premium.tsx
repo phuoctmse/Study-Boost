@@ -1,139 +1,141 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { getCurrentUser } from '@/api/auth';
+import { getPackages } from '@/api/package/package';
+import { Package } from '@/types/package';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PremiumPage = () => {
-  const handlePurchase = () => {
-    // Implement purchase logic here
-    alert('Thank you for purchasing Premium!');
+  const router = useRouter();
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const res = await getPackages();
+        // Map Appwrite documents to Package type
+        const pkgs = (res.documents || []).map((doc: any) => ({
+          id: doc.$id || doc.id,
+          name: doc.name,
+          price: doc.price,
+          duration: doc.duration,
+          description: doc.description,
+        }));
+        setPackages(pkgs);
+      } catch (e) {
+        setPackages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPackages();
+  }, []);
+
+  const handlePurchase = async (pkg: Package) => {
+    console.log('Selected package:', pkg);
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      // Pass package id and price to payment-process using query string
+      router.push({
+        pathname: '/payment-process',
+        params: {
+          price: pkg.price,
+          packageId: pkg.id,
+        },
+      });
+    } catch (error) {
+      console.error('Purchase error:', error);
+      Alert.alert(
+        'Purchase Error',
+        'Please make sure you are logged in to purchase premium.',
+        [
+          { text: 'OK', onPress: () => router.push('/login') }
+        ]
+      );
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>      
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Choose a plan</Text>
+        <Text style={styles.title}>Chọn gói học</Text>
         <Text style={styles.subtitle}>
-          Whichever plan you pick, it's free until you love your study.
+          Dù bạn chọn gói nào, hãy trải nghiệm miễn phí cho đến khi bạn thực sự yêu thích việc học!
         </Text>
-
-        <View style={styles.plansContainerVertical}>
-          {/* Default Plan */}
-          <View style={styles.planCard}>
-            <View style={styles.planHeader}>
-              <View style={styles.planTitleContainer}>
-                <Text style={styles.planTitleEmoji}>🆓</Text>
-                <Text style={styles.planTitle}>Free (Default Plan)</Text>
+        {loading ? (
+          <Text style={{ textAlign: 'center', marginTop: 30 }}>Đang tải gói...</Text>
+        ) : (
+          <View style={styles.plansContainerVertical}>
+            {packages.map((pkg, idx) => (
+              <View key={pkg.id || idx} style={[styles.planCard, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumCard]}>
+                {pkg.name.toLowerCase() === 'student' && (
+                  <View style={styles.popularTag}>
+                    <Text style={styles.popularText}>Phổ biến nhất</Text>
+                  </View>
+                )}
+                <View style={styles.planHeader}>
+                  <View style={styles.planTitleContainer}>
+                    <Text style={[styles.planTitleEmoji, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumEmoji]}>{pkg.name.toLowerCase() === 'miễn phí' ? '🆓' : '🏅'}</Text>
+                    <Text style={[styles.planTitle, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumTitle]}>{pkg.name}</Text>
+                  </View>
+                  <Text style={[styles.planPrice, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumPrice]}>
+                    <Text style={pkg.name.toLowerCase() !== 'miễn phí' ? styles.priceAmount2 : styles.priceAmount}>
+                      {pkg.price === null || pkg.price === undefined
+                        ? 'Liên hệ công ty'
+                        : pkg.price === 0
+                          ? '0đ'
+                          : `${Number(pkg.price).toLocaleString()} VNĐ`}
+                    </Text>
+                    {(pkg.price !== null && pkg.price !== undefined) && (
+                      <Text style={pkg.name.toLowerCase() !== 'miễn phí' ? styles.pricePeriod2 : styles.pricePeriod}>/tháng</Text>
+                    )}
+                  </Text>
+                </View>
+                <View style={styles.featuresContainer}>
+                  {(Array.isArray(pkg.description)
+                    ? pkg.description
+                    : pkg.description.split(/\n|\r|\r\n|,|\u2028|\u2029|\n/g).map(item => item.trim()).filter(Boolean)
+                  ).map((desc, i) => (
+                    <View key={i} style={styles.featureItem}>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={pkg.name.toLowerCase() !== 'miễn phí' ? '#fff' : '#353859'} style={{marginRight: 6}} />
+                      <Text style={[styles.featureText, pkg.name.toLowerCase() !== 'miễn phí' && styles.premiumFeatureText]}>{desc}</Text>
+                    </View>
+                  ))}
+                </View>
+                {pkg.name.trim().toLowerCase() === 'dài hạn' ? (
+                  <TouchableOpacity
+                    style={styles.purchaseButton}
+                    onPress={() => {
+                      Linking.openURL('https://www.facebook.com/profile.php?id=61576085227183');
+                    }}
+                  >
+                    <Text style={styles.purchaseButtonText}>Liên hệ</Text>
+                  </TouchableOpacity>
+                ) : (
+                  pkg.price === 0 ? (
+                    <TouchableOpacity style={styles.currentButton}>
+                      <Text style={styles.currentButtonText}>Đang sử dụng</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.purchaseButton}
+                      onPress={() => handlePurchase(pkg)}
+                    >
+                      <Text style={styles.purchaseButtonText}>Nâng cấp ngay</Text>
+                    </TouchableOpacity>
+                  )
+                )}
               </View>
-              <Text style={styles.planPrice}>
-                <Text style={styles.priceAmount}>0đ</Text>
-                <Text style={styles.pricePeriod}>/mo</Text>
-              </Text>
-            </View>
-
-            <View style={styles.featuresContainer}>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Access to basic flashcards</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Limited daily quizzes</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Standard learning streak tracker</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Basic study reminders</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Limited subject categories</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>Community forum access</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#353859" />
-                <Text style={styles.featureText}>View progress history (last 7 days)</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.currentButton}>
-              <Text style={styles.currentButtonText}>Current</Text>
-            </TouchableOpacity>
+            ))}
           </View>
-
-          {/* Premium Plan */}
-          <View style={[styles.planCard, styles.premiumCard]}>
-            <View style={styles.popularTag}>
-              <Text style={styles.popularText}>Most popular</Text>
-            </View>
-            <View style={styles.planHeader}>
-              <View style={styles.planTitleContainer}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji]}>💎</Text>
-                <Text style={[styles.planTitle, styles.premiumTitle]}>Premium</Text>
-              </View>
-              <Text style={[styles.planPrice, styles.premiumPrice]}>
-                <Text style={styles.priceAmount2}>150,000 VND</Text>
-                <Text style={styles.pricePeriod2}>/mo</Text>
-              </Text>
-            </View>
-
-            <View style={styles.featuresContainer}>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Unlimited flashcard creation</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>AI-generated practice questions</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Smart review system (Spaced Repetition)</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Access to premium study sets</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Offline access to materials</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Advanced performance analytics</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Customizable study plans</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Priority support</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>No ads</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Text style={[styles.planTitleEmoji, styles.premiumEmoji, {marginRight: 5}]}>🌟</Text>
-                <Text style={[styles.featureText, styles.premiumFeatureText]}>Early access to new features</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.purchaseButton}
-              onPress={handlePurchase}
-            >
-              <Text style={styles.purchaseButtonText}>Purchase</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -146,15 +148,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
-    marginTop: 65, // Add some top margin to account for the Navbar
+    paddingBottom: 90,
+    marginTop: 65,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
     color: '#353859',
     textAlign: 'center',
-    marginTop: 20,
   },
   subtitle: {
     fontSize: 16,

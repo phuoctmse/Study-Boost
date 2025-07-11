@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -22,10 +22,10 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false, // This hides the header on all screens
         }}
-      >
-        <Stack.Screen name="index" />
+      >        <Stack.Screen name="index" />
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
+        <Stack.Screen name="surveypage" />
         <Stack.Screen 
           name="(authenticated)" 
           options={{

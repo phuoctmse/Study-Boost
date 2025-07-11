@@ -1,189 +1,283 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { getCurrentUser } from '@/api/auth';
+import { getActivitiesByIds, getDailySessionsByIds, getMilestonesByIds, getStudySchedulesByUserId, getWeeklyPlansByIds } from '@/api/study-schedule/study_schedule';
+import { MilestoneCard } from '@/components/schedule/MilestoneCard';
+import { WeeklyPlanCard } from '@/components/schedule/WeeklyPlanCard';
+import { WeekTable } from '@/components/schedule/WeekTable';
+import { Milestones, WeeklyPlan } from '@/types/study_schedule';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width } = Dimensions.get('window');
-
-type DayInfo = {
-  dayNumber: string;
-  dayName: string;
-};
-
-type SessionInfo = {
-  id: string;
-  title: string;
-  timeStart: string;
-  timeEnd: string;
-  dayIndex: number;
-  hourStart: number;
-  durationHours: number;
-};
+import React, { useEffect, useState } from 'react';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ScheduleScreen = () => {
-  const [currentWeekIndex, setCurrentWeekIndex] = useState<number>(0);
-  const [selectedDay, setSelectedDay] = useState<number>(0);
-  
-  // Mock data - in a real app this would come from an API or local storage
-  const days: DayInfo[] = [
-    { dayNumber: '03', dayName: 'Monday' },
-    { dayNumber: '03', dayName: 'Monday' },
-    { dayNumber: '03', dayName: 'Monday' },
-    { dayNumber: '03', dayName: 'Monday' },
-    { dayNumber: '03', dayName: 'Monday' },
-    { dayNumber: '03', dayName: 'Monday' },
-    { dayNumber: '03', dayName: 'Monday' },
-  ];
-  
-  const studySessions: SessionInfo[] = [
-    { id: '1', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 0, hourStart: 8, durationHours: 1 },
-    { id: '2', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 1, hourStart: 9, durationHours: 2 },
-    { id: '3', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 2, hourStart: 10, durationHours: 1 },
-    { id: '4', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 3, hourStart: 8, durationHours: 1 },
-    { id: '5', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 4, hourStart: 12, durationHours: 1 },
-    { id: '6', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 5, hourStart: 13, durationHours: 3 },
-    { id: '7', title: 'Math', timeStart: '8:00', timeEnd: '8:00', dayIndex: 6, hourStart: 7, durationHours: 1 },
-  ];
-  
-  const hours = Array.from({ length: 12 }, (_, i) => 8 + i);
-  
-  const navigateWeek = (direction: 'next' | 'prev') => {
-    if (direction === 'next') {
-      setCurrentWeekIndex(currentWeekIndex + 1);
-    } else {
-      setCurrentWeekIndex(Math.max(0, currentWeekIndex - 1));
-    }
-  };
-  
-  const renderStats = () => {
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Time studied today</Text>
-          <Text style={styles.statValue}>13 GIỜ</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Time studied this week</Text>
-          <Text style={styles.statValue}>13 GIỜ</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Goal for this week</Text>
-          <Text style={styles.statValue}>13 GIỜ</Text>
-          <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="pencil-outline" size={20} color="#555" />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Challenge</Text>
-          <Text style={styles.statValue}>13 GIỜ</Text>
-          <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="pencil-outline" size={20} color="#555" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-  
-  const renderCalendarHeader = () => {
-    return (
-      <View style={styles.calendarHeader}>
-        <View style={styles.timeColumn}>
-          <Ionicons name="time-outline" size={24} color="#555" />
-        </View>
-        
-        {days.map((day, index) => (
-          <TouchableOpacity 
-            key={index}
-            style={[
-              styles.dayColumn, 
-              selectedDay === index && styles.selectedDayColumn
-            ]}
-            onPress={() => setSelectedDay(index)}
-          >
-            <Text style={styles.dayNumber}>{day.dayNumber}</Text>
-            <Text style={styles.dayName}>{day.dayName}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-  
-  const getSessionPosition = (session: SessionInfo) => {
-    const topOffset = (session.hourStart - 8) * 45 + 45; // 45px per hour, 45px for header
-    const height = session.durationHours * 45;
-    return {
-      top: topOffset,
-      height,
-      left: (session.dayIndex + 1) * (width / 8)
+  const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
+  const [selectedWeeklyPlan, setSelectedWeeklyPlan] = useState<WeeklyPlan | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [studySchedules, setStudySchedules] = useState<any[]>([]);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
+  const [dailySessions, setDailySessions] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<any | null>(null);
+  const [activityModalVisible, setActivityModalVisible] = useState(false);
+  const [milestones, setMilestones] = useState<Milestones[]>([]);
+  const [loadingMilestones, setLoadingMilestones] = useState(true);
+  const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+
+  useEffect(() => {
+    // Separate fetch functions
+    const fetchStudySchedules = async (userId: string) => {
+      return await getStudySchedulesByUserId(userId);
     };
-  };
+
+    const fetchWeeklyPlans = async (weeklyPlanIds: string[]) => {
+      const plans = await getWeeklyPlansByIds(weeklyPlanIds);
+      return plans.map((doc: any) => ({
+        study_schedule_id: doc.study_schedule_id,
+        week: doc.week,
+        focus: doc.focus,
+        topics: doc.topics,
+        objective: doc.objective
+      }));
+    };
+
+    const fetchDailySessions = async (dailySessionIds: string[]) => {
+      return await getDailySessionsByIds(dailySessionIds);
+    };
+
+    const fetchActivities = async (dailySessionsRes: any[]) => {
+      let allActivityIds: string[] = [];
+      dailySessionsRes.forEach((ds: any) => {
+        if (Array.isArray(ds.activities_id)) {
+          allActivityIds = allActivityIds.concat(ds.activities_id);
+        }
+      });
+      return await getActivitiesByIds(allActivityIds);
+    };
+
+    const fetchMilestones = async (milestoneIds: any) => {
+      let ids = [];
+      if (Array.isArray(milestoneIds)) {
+        ids = milestoneIds;
+      } else if (typeof milestoneIds === 'string') {
+        ids = [milestoneIds];
+      }
+      if (ids.length > 0) {
+        const milestoneDocs = await getMilestonesByIds(ids);
+        return milestoneDocs.map((doc: any) => ({
+          id: typeof doc.id === 'number' ? doc.id : parseInt(doc.id),
+          description: doc.description,
+          target_completion: doc.target_completion,
+          study_schedule_id: doc.study_schedule_id,
+        }));
+      } else {
+        return [];
+      }
+    };
+
+    const fetchSchedulesAndPlans = async () => {
+      setLoadingSchedules(true);
+      setLoading(true);
+      try {
+        const user = await getCurrentUser();
+        const schedules = await fetchStudySchedules(user.$id);
+        setStudySchedules(schedules);
+        if (schedules.length > 0) {
+          setSelectedScheduleId(schedules[0].$id);
+          // Weekly plans
+          const weeklyPlanIds = Array.isArray(schedules[0].weekly_plan_id) ? schedules[0].weekly_plan_id : [];
+          const mappedPlans = await fetchWeeklyPlans(weeklyPlanIds);
+          setWeeklyPlans(mappedPlans);
+          // Daily sessions
+          const dailySessionIds = Array.isArray(schedules[0].daily_session_id) ? schedules[0].daily_session_id : [schedules[0].daily_session_id];
+          const dailySessionsRes = await fetchDailySessions(dailySessionIds);
+          setDailySessions(dailySessionsRes);
+          // Activities
+          const activitiesRes = await fetchActivities(dailySessionsRes);
+          setActivities(activitiesRes);
+          // Milestones
+          setLoadingMilestones(true);
+          const mappedMilestones = await fetchMilestones(schedules[0].milestones_id);
+          setMilestones(mappedMilestones);
+          setLoadingMilestones(false);
+        } else {
+          setWeeklyPlans([]);
+          setDailySessions([]);
+          setActivities([]);
+          setMilestones([]);
+          setLoadingMilestones(false);
+        }
+      } catch (error) {
+        console.error('Error fetching schedules or daily sessions:', error);
+        setWeeklyPlans([]);
+        setStudySchedules([]);
+        setDailySessions([]);
+        setActivities([]);
+        setMilestones([]);
+        setLoadingMilestones(false);
+      } finally {
+        setLoading(false);
+        setLoadingSchedules(false);
+      }
+    };
+    fetchSchedulesAndPlans();
+  }, []);
   
-  const renderSessions = () => {
-    return studySessions.map((session) => {
-      const position = getSessionPosition(session);
-      return (
-        <View
-          key={session.id}
-          style={[
-            styles.sessionItem,
-            {
-              top: position.top,
-              height: position.height,
-              left: position.left,
-              width: width / 8 - 2,
-            },
-          ]}
-        >
-          <Text style={styles.sessionTitle}>{session.title}</Text>
-          <Text style={styles.sessionTime}>
-            {session.timeStart} - {session.timeEnd}
-          </Text>
+  const handleWeeklyPlanPress = (plan: WeeklyPlan) => {
+    setSelectedWeeklyPlan(plan);
+    setModalVisible(true);
+  };
+
+  const handleActivityPress = (activity: any) => {
+    setSelectedActivity(activity);
+    setActivityModalVisible(true);
+  };
+
+  const renderWeeklyPlanModal = () => {
+    if (!selectedWeeklyPlan) return null;
+    
+    const topicsArray = Array.isArray(selectedWeeklyPlan.topics) ? 
+      selectedWeeklyPlan.topics : [];
+
+    return (
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Kế hoạch tuần {selectedWeeklyPlan.week}</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color="#353859" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Trọng tâm</Text>
+                <Text style={styles.modalText}>{selectedWeeklyPlan.focus}</Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Mục tiêu</Text>
+                <Text style={styles.modalText}>{selectedWeeklyPlan.objective}</Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Chủ đề</Text>
+                {topicsArray.length > 0 ? (
+                  <View style={styles.topicsContainer}>
+                    {topicsArray.map((topic, idx) => (
+                      <View key={idx} style={styles.topicChip}>
+                        <Text style={styles.topicText}>{topic}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.noTopicsText}>Không có chủ đề nào</Text>
+                )}
+              </View>
+            </ScrollView>
+            
+            <TouchableOpacity 
+              style={styles.closeModalButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeModalButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      );
-    });
+      </Modal>
+    );
   };
-  
+
+  const renderActivityModal = () => {
+    if (!selectedActivity) return null;
+    
+    return (
+      <Modal
+        visible={activityModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setActivityModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chi tiết hoạt động</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setActivityModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color="#353859" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.activityName}>{selectedActivity.name}</Text>
+              <Text style={styles.activityDuration}>{selectedActivity.duration_minutes} phút</Text>
+              <Text style={styles.activityDescription}>{selectedActivity.description}</Text>
+              
+              {Array.isArray(selectedActivity.techniques) && selectedActivity.techniques.length > 0 && (
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Kỹ thuật</Text>
+                  <View style={styles.techniquesContainer}>
+                    {selectedActivity.techniques.map((tech: string, idx: number) => (
+                      <View key={idx} style={styles.techniqueChip}>
+                        <Text style={styles.techniqueText}>{tech}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+            
+            <TouchableOpacity 
+              style={styles.closeModalButton}
+              onPress={() => setActivityModalVisible(false)}
+            >
+              <Text style={styles.closeModalButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Study Session</Text>
-      
-      {renderStats()}
-      
-      <View style={styles.calendarContainer}>
-        {renderCalendarHeader()}
+      <Text style={styles.header}>Lịch học của tôi</Text>
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <MilestoneCard 
+          milestones={milestones}
+          loading={loadingMilestones}
+          expanded={milestoneExpanded}
+          onToggleExpanded={() => setMilestoneExpanded(!milestoneExpanded)}
+        />
         
-        <ScrollView style={styles.timeGrid}>
-          <View style={styles.timeSlotsContainer}>
-            {hours.map((hour, index) => (
-              <View key={index} style={styles.timeSlot}>
-                <View style={styles.timeColumn}>
-                  <Text style={styles.timeText}>{hour}.00</Text>
-                </View>
-                
-                <View style={styles.timeSlotRow} />
-              </View>
-            ))}
-            
-            {/* Position the sessions absolutely over the time grid */}
-            {renderSessions()}
-          </View>
-        </ScrollView>
+        <WeeklyPlanCard 
+          weeklyPlans={weeklyPlans}
+          loading={loading || loadingSchedules}
+          onPress={handleWeeklyPlanPress}
+        />
         
-        {/* <View style={styles.weekNavigator}>
-          <TouchableOpacity onPress={() => navigateWeek('prev')} style={styles.weekButton}>
-            <Ionicons name="chevron-back" size={24} color="#555" />
-          </TouchableOpacity>
-          
-          <Text style={styles.weekText}>Tuần {currentWeekIndex + 1}</Text>
-          
-          <TouchableOpacity onPress={() => navigateWeek('next')} style={styles.weekButton}>
-            <Ionicons name="chevron-forward" size={24} color="#555" />
-          </TouchableOpacity>
-        </View> */}
-      </View>
+        <WeekTable 
+          dailySessions={dailySessions}
+          activities={activities}
+          loading={loading || loadingSchedules}
+          onActivityPress={handleActivityPress}
+        />
+      </ScrollView>
+      
+      {renderWeeklyPlanModal()}
+      {renderActivityModal()}
     </SafeAreaView>
   );
 };
@@ -193,141 +287,137 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#737AA8',
   },
+  scrollContainer: {
+    flex: 1,
+  },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 15,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    marginBottom: 20,
-  },
-  statCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 16,
-    width: '48%',
-    marginBottom: 15,
-    position: 'relative',
   },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#353859',
-    marginBottom: 8,
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
   },
-  statValue: {
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#353859',
   },
-  editButton: {
-    position: 'absolute',
-    right: 10,
-    top: 10,
-    padding: 5,
-    backgroundColor: 'rgba(233, 233, 233, 0.5)',
-    borderRadius: 15,
+  closeButton: {
+    padding: 4,
   },
-  calendarContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
+  modalContent: {
+    padding: 20,
   },
-  calendarHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f0f5',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  modalSection: {
+    marginBottom: 20,
   },
-  timeColumn: {
-    width: width / 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#737AA8',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  dayColumn: {
-    width: width / 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 5,
-  },
-  selectedDayColumn: {
-    backgroundColor: 'rgba(108, 99, 255, 0.1)',
-    borderRadius: 8,
-  },
-  dayNumber: {
+  modalText: {
     fontSize: 16,
+    color: '#353859',
+    lineHeight: 24,
+  },
+  topicsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  topicChip: {
+    backgroundColor: '#E6E7F4',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    margin: 4,
+  },
+  topicText: {
+    color: '#737AA8',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  noTopicsText: {
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  activityName: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#353859',
+    marginBottom: 8,
   },
-  dayName: {
-    fontSize: 12,
-    color: '#777',
-  },
-  timeGrid: {
-    flex: 1,
-  },
-  timeSlotsContainer: {
-    position: 'relative',
-  },
-  timeSlot: {
-    flexDirection: 'row',
-    height: 45,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  timeSlotRow: {
-    flex: 1,
-    height: 45,
-    flexDirection: 'row',
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#555',
-  },
-  sessionItem: {
-    position: 'absolute',
-    backgroundColor: '#ebebf2',
-    borderRadius: 6,
-    padding: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: '#6c63ff',
-  },
-  sessionTitle: {
-    fontWeight: '600',
-    fontSize: 12,
-    color: '#353859',
-  },
-  sessionTime: {
-    fontSize: 10,
-    color: '#777',
-  },
-  weekNavigator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  weekButton: {
-    padding: 10,
-  },
-  weekText: {
+  activityDuration: {
     fontSize: 16,
-    fontWeight: '500',
-    marginHorizontal: 15,
+    color: '#FCC89B',
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  activityDescription: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  techniquesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  techniqueChip: {
+    backgroundColor: '#FCC89B',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    margin: 4,
+  },
+  techniqueText: {
     color: '#353859',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  closeModalButton: {
+    backgroundColor: '#737AA8',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    margin: 20,
+    marginTop: 0,
+  },
+  closeModalButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

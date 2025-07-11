@@ -1,111 +1,123 @@
-import { router, Stack } from "expo-router";
-import React, { useRef, useState } from 'react';
-import { Animated, Dimensions, StatusBar } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import Navbar from '../../components/Navbar';
-import Sidebar from '../../components/Sidebar';
-import LoadingScreen from '../../components/LoadingScreen';
-import { logout as appwriteLogout } from '../../api/auth';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+import { StatusBar } from 'react-native';
+import AIAssist from './ai-assist';
+import Dashboard from './dashboard';
+import Leaderboard from './leaderboard';
+import PaymentProcess from './payment-process';
+import Pomodoro from './pomodoro';
+import Premium from './premium';
+import Profile from './profile';
+import Schedule from './schedule';
 
-const { width } = Dimensions.get('window');
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// Wrapper components for protected routes
+const ProtectedSchedule = () => (
+  <ProtectedRoute>
+    <Schedule />
+  </ProtectedRoute>
+);
+
+const ProtectedAIAssist = () => (
+  <ProtectedRoute>
+    <AIAssist />
+  </ProtectedRoute>
+);
+
+const ProtectedLeaderboard = () => (
+  <ProtectedRoute>
+    <Leaderboard />
+  </ProtectedRoute>
+);
+
+function TabNavigator() {
+  return (
+    <Tab.Navigator
+      initialRouteName="Pomodoro"
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#181818',
+          borderTopWidth: 0,
+          height: 64,
+        },
+        tabBarActiveTintColor: '#FFF',
+        tabBarInactiveTintColor: '#AAA',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginBottom: 6,
+        },
+      })}
+    >
+      <Tab.Screen
+        name="Schedule"
+        component={ProtectedSchedule}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+          tabBarLabel: 'Lịch học',
+        }}
+      />
+      <Tab.Screen
+        name="AIAssist"
+        component={ProtectedAIAssist}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="robot-outline" size={size} color={color} />
+          ),
+          tabBarLabel: 'AI Assist',
+        }}
+      />
+      <Tab.Screen
+        name="Pomodoro"
+        component={Pomodoro}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome5 name="clock" size={size} color={color} />
+          ),
+          tabBarLabel: 'Pomodoro',
+        }}
+      />
+      <Tab.Screen
+        name="Leaderboard"
+        component={ProtectedLeaderboard}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="trophy-outline" size={size} color={color} />
+          ),
+          tabBarLabel: 'Bảng xếp hạng',
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={Profile}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-circle-outline" size={size} color={color} />
+          ),
+          tabBarLabel: 'Bạn',
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function AuthenticatedLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const sidebarAnimation = useRef(new Animated.Value(-width * 0.7)).current;
-
-  const toggleSidebar = () => {
-    if (sidebarOpen) {
-      // Close sidebar
-      Animated.timing(sidebarAnimation, {
-        toValue: -width * 0.7,
-        duration: 300,
-        useNativeDriver: true
-      }).start(() => setSidebarOpen(false));
-    } else {
-      // Open sidebar
-      setSidebarOpen(true);
-      Animated.timing(sidebarAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true
-      }).start();
-    }
-  };  const handleLogout = async () => {
-    setIsLoading(true);
-    try {
-      await appwriteLogout();
-      router.replace('/');
-    } catch (error) {
-      console.error("Logout failed", error);
-      setIsLoading(false); // Only set to false on error as navigation will unmount this component on success
-    }
-  };
-
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        {isLoading && <LoadingScreen message="Logging out..." />}
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="transparent" 
-          translucent={true}
-        />
-        
-        {/* Global Components for all authenticated pages */}
-        <Navbar toggleSidebar={toggleSidebar} />
-        
-        <Sidebar 
-          isOpen={sidebarOpen}
-          sidebarAnimation={sidebarAnimation}
-          toggleSidebar={toggleSidebar}
-          onLogout={handleLogout}
-        />
-        
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen 
-            name="dashboard"
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="pomodoro"
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="premium" 
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="leaderboard" 
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="schedule" 
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-        </Stack>
-
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Tabs" component={TabNavigator} />
+        <Stack.Screen name="premium" component={Premium} />
+        <Stack.Screen name="dashboard" component={Dashboard} />
+        <Stack.Screen name="payment-process" component={PaymentProcess} />
+      </Stack.Navigator>
+    </>
   );
 }
